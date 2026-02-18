@@ -1,4 +1,4 @@
-import { Pause, Play, X } from "lucide-react"
+import { Pause, Play, Volume2, VolumeX, X } from "lucide-react"
 import { useCallback, useMemo } from "react"
 import { usePersistentPlayer } from "#/integrations/player/persistent-player"
 
@@ -20,14 +20,22 @@ function generateBars(episodeId: number, count: number): number[] {
 	})
 }
 
+const SPEEDS = [1, 1.25, 1.5, 1.75, 2]
+
 export function MiniPlayer() {
 	const {
 		track,
 		isPlaying,
 		currentTime,
 		duration,
+		playbackRate,
+		volume,
+		isMuted,
 		toggle,
 		seek,
+		setPlaybackRate,
+		setVolume,
+		toggleMute,
 		clearTrack,
 	} = usePersistentPlayer()
 
@@ -35,10 +43,7 @@ export function MiniPlayer() {
 		() => (track ? generateBars(track.id, 64) : []),
 		[track],
 	)
-
-	if (!track) return null
-
-	const total = duration > 0 ? duration : track.duration
+	const total = duration > 0 ? duration : (track?.duration ?? 0)
 	const progress = total > 0 ? currentTime / total : 0
 	const progressBars = Math.floor(progress * bars.length)
 
@@ -51,6 +56,14 @@ export function MiniPlayer() {
 		},
 		[seek, total],
 	)
+
+	function cycleSpeed() {
+		const index = SPEEDS.findIndex((speed) => speed === playbackRate)
+		const nextIndex = (index + 1) % SPEEDS.length
+		setPlaybackRate(SPEEDS[nextIndex] ?? 1)
+	}
+
+	if (!track) return null
 
 	return (
 		<>
@@ -98,6 +111,35 @@ export function MiniPlayer() {
 								)
 							})}
 						</div>
+					</div>
+
+					<button
+						type="button"
+						onClick={cycleSpeed}
+						className="font-mono text-xs border border-white/30 px-2 py-1 text-white/60 hover:border-white hover:text-white transition-colors whitespace-nowrap"
+					>
+						{playbackRate}x
+					</button>
+
+					<div className="flex items-center gap-2 min-w-0">
+						<button
+							type="button"
+							onClick={toggleMute}
+							className="w-8 h-8 border border-white/20 text-white/40 hover:text-white hover:border-white transition-colors flex items-center justify-center flex-shrink-0"
+							aria-label={isMuted ? "Unmute" : "Mute"}
+						>
+							{isMuted ? <VolumeX size={14} /> : <Volume2 size={14} />}
+						</button>
+						<input
+							type="range"
+							min={0}
+							max={1}
+							step={0.01}
+							value={volume}
+							onChange={(e) => setVolume(Number(e.target.value))}
+							className="w-20 accent-[#22c55e]"
+							aria-label="Volume"
+						/>
 					</div>
 
 					<div className="font-mono text-xs text-white/50 whitespace-nowrap">

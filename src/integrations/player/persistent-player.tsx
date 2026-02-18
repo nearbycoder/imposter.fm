@@ -18,11 +18,15 @@ interface PersistentPlayerContextValue {
 	currentTime: number
 	duration: number
 	playbackRate: number
+	volume: number
+	isMuted: boolean
 	loadTrack: (track: PlayerTrack, options?: LoadTrackOptions) => Promise<void>
 	toggle: () => void
 	pause: () => void
 	seek: (time: number) => void
 	setPlaybackRate: (rate: number) => void
+	setVolume: (volume: number) => void
+	toggleMute: () => void
 	clearTrack: () => void
 }
 
@@ -36,11 +40,13 @@ export function PersistentPlayerProvider({
 }) {
 	const audioRef = useRef<HTMLAudioElement>(null)
 	const pendingSeekRef = useRef<number | null>(null)
+	const previousVolumeRef = useRef(1)
 	const [track, setTrack] = useState<PlayerTrack | null>(null)
 	const [isPlaying, setIsPlaying] = useState(false)
 	const [currentTime, setCurrentTime] = useState(0)
 	const [duration, setDuration] = useState(0)
 	const [playbackRate, setPlaybackRateState] = useState(1)
+	const [volume, setVolumeState] = useState(1)
 
 	useEffect(() => {
 		const audio = audioRef.current
@@ -97,6 +103,11 @@ export function PersistentPlayerProvider({
 		if (!audioRef.current) return
 		audioRef.current.playbackRate = playbackRate
 	}, [playbackRate])
+
+	useEffect(() => {
+		if (!audioRef.current) return
+		audioRef.current.volume = volume
+	}, [volume])
 
 	async function loadTrack(nextTrack: PlayerTrack, options?: LoadTrackOptions) {
 		const audio = audioRef.current
@@ -164,6 +175,23 @@ export function PersistentPlayerProvider({
 		setPlaybackRateState(rate)
 	}
 
+	function setVolume(nextVolume: number) {
+		const clamped = Math.max(0, Math.min(1, nextVolume))
+		if (clamped > 0) {
+			previousVolumeRef.current = clamped
+		}
+		setVolumeState(clamped)
+	}
+
+	function toggleMute() {
+		if (volume <= 0) {
+			setVolumeState(previousVolumeRef.current > 0 ? previousVolumeRef.current : 1)
+			return
+		}
+		previousVolumeRef.current = volume
+		setVolumeState(0)
+	}
+
 	function clearTrack() {
 		const audio = audioRef.current
 		if (!audio) return
@@ -183,14 +211,18 @@ export function PersistentPlayerProvider({
 			currentTime,
 			duration,
 			playbackRate,
+			volume,
+			isMuted: volume <= 0,
 			loadTrack,
 			toggle,
 			pause,
 			seek,
 			setPlaybackRate,
+			setVolume,
+			toggleMute,
 			clearTrack,
 		}),
-		[track, isPlaying, currentTime, duration, playbackRate],
+		[track, isPlaying, currentTime, duration, playbackRate, volume],
 	)
 
 	return (
