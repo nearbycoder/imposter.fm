@@ -1,24 +1,27 @@
-import { Link, createFileRoute } from "@tanstack/react-router"
-import { useTRPC } from "#/integrations/trpc/react"
-import { useQuery } from "@tanstack/react-query"
+import { Link, createFileRoute } from "@tanstack/react-router";
+import { useTRPC } from "#/integrations/trpc/react";
+import { useQuery } from "@tanstack/react-query";
 
 export const Route = createFileRoute("/admin/")({
 	component: AdminDashboard,
-})
+});
 
 function AdminDashboard() {
-	const trpc = useTRPC()
+	const trpc = useTRPC();
 
-	const { data: podcastConfig } = useQuery(trpc.podcast.get.queryOptions())
+	const { data: podcastConfig } = useQuery(trpc.podcast.get.queryOptions());
 	const { data: episodesData } = useQuery(
 		trpc.episodes.adminList.queryOptions(),
-	)
+	);
 
-	const totalEpisodes = episodesData?.length ?? 0
+	const totalEpisodes = episodesData?.length ?? 0;
 	const publishedEpisodes =
-		episodesData?.filter((e) => e.status === "published").length ?? 0
+		episodesData?.filter((e) => e.status === "published").length ?? 0;
 	const draftEpisodes =
-		episodesData?.filter((e) => e.status === "draft").length ?? 0
+		episodesData?.filter((e) => e.status === "draft").length ?? 0;
+	const totalListens =
+		episodesData?.reduce((sum, episode) => sum + (episode.listens ?? 0), 0) ??
+		0;
 
 	return (
 		<div className="p-8">
@@ -32,11 +35,12 @@ function AdminDashboard() {
 			</div>
 
 			{/* Stats */}
-			<div className="grid grid-cols-3 gap-4 mb-8">
+			<div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
 				{[
 					{ label: "TOTAL EPISODES", value: totalEpisodes },
 					{ label: "PUBLISHED", value: publishedEpisodes },
 					{ label: "DRAFTS", value: draftEpisodes },
+					{ label: "LISTENS", value: totalListens },
 				].map((stat) => (
 					<div key={stat.label} className="border-2 border-white p-6">
 						<div className="font-mono text-xs text-white/40 uppercase tracking-widest mb-2">
@@ -83,5 +87,5 @@ function AdminDashboard() {
 				</a>
 			</div>
 		</div>
-	)
+	);
 }

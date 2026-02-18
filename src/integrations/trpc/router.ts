@@ -1,20 +1,16 @@
-import { count, desc, eq } from "drizzle-orm"
-import { z } from "zod"
-import { db } from "#/db"
-import { episodes, podcast } from "#/db/schema"
-import { storage } from "#/lib/storage"
-import {
-	createTRPCRouter,
-	protectedProcedure,
-	publicProcedure,
-} from "./init"
+import { and, count, desc, eq, sql } from "drizzle-orm";
+import { z } from "zod";
+import { db } from "#/db";
+import { episodeListens, episodes, podcast } from "#/db/schema";
+import { storage } from "#/lib/storage";
+import { createTRPCRouter, protectedProcedure, publicProcedure } from "./init";
 
-import type { TRPCRouterRecord } from "@trpc/server"
+import type { TRPCRouterRecord } from "@trpc/server";
 
 const podcastRouter = {
 	get: publicProcedure.query(async () => {
-		const [row] = await db.select().from(podcast).limit(1)
-		return row ?? null
+		const [row] = await db.select().from(podcast).limit(1);
+		return row ?? null;
 	}),
 
 	upsert: protectedProcedure
@@ -35,19 +31,19 @@ const podcastRouter = {
 			}),
 		)
 		.mutation(async ({ input }) => {
-			const [existing] = await db.select().from(podcast).limit(1)
+			const [existing] = await db.select().from(podcast).limit(1);
 			if (existing) {
 				const [updated] = await db
 					.update(podcast)
 					.set({ ...input, updatedAt: new Date() })
 					.where(eq(podcast.id, existing.id))
-					.returning()
-				return updated
+					.returning();
+				return updated;
 			}
-			const [created] = await db.insert(podcast).values(input).returning()
-			return created
+			const [created] = await db.insert(podcast).values(input).returning();
+			return created;
 		}),
-} satisfies TRPCRouterRecord
+} satisfies TRPCRouterRecord;
 
 const episodesRouter = {
 	list: publicProcedure
@@ -58,7 +54,7 @@ const episodesRouter = {
 			}),
 		)
 		.query(async ({ input }) => {
-			const offset = (input.page - 1) * input.perPage
+			const offset = (input.page - 1) * input.perPage;
 			const [items, [total]] = await Promise.all([
 				db
 					.select()
@@ -71,13 +67,13 @@ const episodesRouter = {
 					.select({ count: count() })
 					.from(episodes)
 					.where(eq(episodes.status, "published")),
-			])
+			]);
 			return {
 				items,
 				total: total?.count ?? 0,
 				page: input.page,
 				totalPages: Math.ceil((total?.count ?? 0) / input.perPage),
-			}
+			};
 		}),
 
 	getBySlug: publicProcedure
@@ -86,13 +82,41 @@ const episodesRouter = {
 			const [episode] = await db
 				.select()
 				.from(episodes)
-				.where(eq(episodes.slug, input.slug))
-				.limit(1)
-			return episode ?? null
+				.where(
+					and(eq(episodes.slug, input.slug), eq(episodes.status, "published")),
+				)
+				.limit(1);
+			return episode ?? null;
 		}),
 
 	adminList: protectedProcedure.query(async () => {
-		return db.select().from(episodes).orderBy(desc(episodes.createdAt))
+		const [items, listenRows] = await Promise.all([
+			db.select().from(episodes).orderBy(desc(episodes.createdAt)),
+			db
+				.select({
+					episodeId: episodeListens.episodeId,
+					listens: count(),
+					uniqueListeners: sql<number>`count(distinct ${episodeListens.listenerId})`,
+				})
+				.from(episodeListens)
+				.groupBy(episodeListens.episodeId),
+		]);
+
+		const listensByEpisode = new Map(
+			listenRows.map((row) => [
+				row.episodeId,
+				{
+					listens: Number(row.listens ?? 0),
+					uniqueListeners: Number(row.uniqueListeners ?? 0),
+				},
+			]),
+		);
+
+		return items.map((episode) => ({
+			...episode,
+			listens: listensByEpisode.get(episode.id)?.listens ?? 0,
+			uniqueListeners: listensByEpisode.get(episode.id)?.uniqueListeners ?? 0,
+		}));
 	}),
 
 	adminGetById: protectedProcedure
@@ -102,14 +126,14 @@ const episodesRouter = {
 				.select()
 				.from(episodes)
 				.where(eq(episodes.id, input.id))
-				.limit(1)
-			return episode ?? null
+				.limit(1);
+			return episode ?? null;
 		}),
 
 	getUploadUrl: protectedProcedure
 		.input(z.object({ key: z.string(), contentType: z.string() }))
 		.mutation(async ({ input }) => {
-			return storage.getUploadUrl(input.key, input.contentType)
+			return storage.getUploadUrl(input.key, input.contentType);
 		}),
 
 	create: protectedProcedure
@@ -132,8 +156,8 @@ const episodesRouter = {
 			}),
 		)
 		.mutation(async ({ input }) => {
-			const [episode] = await db.insert(episodes).values(input).returning()
-			return episode
+			const [episode] = await db.insert(episodes).values(input).returning();
+			return episode;
 		}),
 
 	update: protectedProcedure
@@ -150,35 +174,33 @@ const episodesRouter = {
 				audioMimeType: z.string().optional(),
 				episodeNumber: z.number().int().nullable().optional(),
 				seasonNumber: z.number().int().nullable().optional(),
-				episodeType: z
-					.enum(["full", "trailer", "bonus"])
-					.optional(),
+				episodeType: z.enum(["full", "trailer", "bonus"]).optional(),
 				explicit: z.boolean().optional(),
 				status: z.enum(["draft", "published"]).optional(),
 				publishedAt: z.coerce.date().nullable().optional(),
 			}),
 		)
 		.mutation(async ({ input }) => {
-			const { id, ...data } = input
+			const { id, ...data } = input;
 			const [episode] = await db
 				.update(episodes)
 				.set({ ...data, updatedAt: new Date() })
 				.where(eq(episodes.id, id))
-				.returning()
-			return episode
+				.returning();
+			return episode;
 		}),
 
 	delete: protectedProcedure
 		.input(z.object({ id: z.number().int() }))
 		.mutation(async ({ input }) => {
-			await db.delete(episodes).where(eq(episodes.id, input.id))
-			return { success: true }
+			await db.delete(episodes).where(eq(episodes.id, input.id));
+			return { success: true };
 		}),
-} satisfies TRPCRouterRecord
+} satisfies TRPCRouterRecord;
 
 export const trpcRouter = createTRPCRouter({
 	podcast: podcastRouter,
 	episodes: episodesRouter,
-})
+});
 
-export type TRPCRouter = typeof trpcRouter
+export type TRPCRouter = typeof trpcRouter;

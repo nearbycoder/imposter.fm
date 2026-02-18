@@ -1,183 +1,375 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { useEffect, useRef, useState } from "react"
-import { useTRPC } from "#/integrations/trpc/react"
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useRef, useState } from "react";
+import { useTRPC } from "#/integrations/trpc/react";
 
 interface Episode {
-	id: number
-	slug: string
-	title: string
-	description: string
-	content: string
-	audioKey: string
-	audioDuration: number
-	audioSize: number
-	audioMimeType: string
-	episodeNumber: number | null
-	seasonNumber: number | null
-	episodeType: string
-	explicit: boolean
-	status: string
-	publishedAt: Date | null | string
+	id: number;
+	slug: string;
+	title: string;
+	description: string;
+	content: string;
+	audioKey: string;
+	audioDuration: number;
+	audioSize: number;
+	audioMimeType: string;
+	episodeNumber: number | null;
+	seasonNumber: number | null;
+	episodeType: string;
+	explicit: boolean;
+	status: string;
+	publishedAt: Date | null | string;
 }
 
 interface EpisodeFormProps {
-	episode?: Episode
-	onSuccess?: () => void
+	episode?: Episode;
+	onSuccess?: () => void;
 }
 
 function toSlug(title: string): string {
 	return title
 		.toLowerCase()
 		.replace(/[^a-z0-9]+/g, "-")
-		.replace(/^-|-$/g, "")
+		.replace(/^-|-$/g, "");
 }
 
 async function getAudioDuration(file: File): Promise<number> {
 	return new Promise((resolve) => {
-		const audioContext = new AudioContext()
-		const reader = new FileReader()
+		const audioContext = new AudioContext();
+		const reader = new FileReader();
 		reader.onload = async (e) => {
 			try {
 				const buffer = await audioContext.decodeAudioData(
 					e.target!.result as ArrayBuffer,
-				)
-				resolve(Math.round(buffer.duration))
+				);
+				resolve(Math.round(buffer.duration));
 			} catch {
 				// Fall back to HTML audio element for large files
-				const url = URL.createObjectURL(file)
-				const audio = new Audio(url)
+				const url = URL.createObjectURL(file);
+				const audio = new Audio(url);
 				audio.onloadedmetadata = () => {
-					resolve(Math.round(audio.duration))
-					URL.revokeObjectURL(url)
-				}
+					resolve(Math.round(audio.duration));
+					URL.revokeObjectURL(url);
+				};
 				audio.onerror = () => {
-					resolve(0)
-					URL.revokeObjectURL(url)
-				}
+					resolve(0);
+					URL.revokeObjectURL(url);
+				};
 			} finally {
-				audioContext.close()
+				audioContext.close();
 			}
-		}
-		reader.readAsArrayBuffer(file)
-	})
+		};
+		reader.readAsArrayBuffer(file);
+	});
+}
+
+function formatRecordingTime(seconds: number): string {
+	const m = Math.floor(seconds / 60);
+	const s = seconds % 60;
+	return `${m}:${String(s).padStart(2, "0")}`;
+}
+
+function extensionFromMimeType(mimeType: string): string {
+	if (mimeType.includes("webm")) return "webm";
+	if (mimeType.includes("mp4") || mimeType.includes("aac")) return "m4a";
+	if (mimeType.includes("mpeg")) return "mp3";
+	if (mimeType.includes("wav")) return "wav";
+	return "webm";
+}
+
+function getPreferredRecordingMimeType(): string | undefined {
+	if (
+		typeof window === "undefined" ||
+		typeof window.MediaRecorder === "undefined"
+	) {
+		return undefined;
+	}
+
+	const mimeTypes = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4"];
+	return mimeTypes.find((mimeType) =>
+		window.MediaRecorder.isTypeSupported(mimeType),
+	);
 }
 
 export function EpisodeForm({ episode, onSuccess }: EpisodeFormProps) {
-	const trpc = useTRPC()
-	const queryClient = useQueryClient()
-	const fileInputRef = useRef<HTMLInputElement>(null)
+	const trpc = useTRPC();
+	const queryClient = useQueryClient();
+	const fileInputRef = useRef<HTMLInputElement>(null);
+	const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+	const mediaStreamRef = useRef<MediaStream | null>(null);
+	const recordingTimerRef = useRef<number | null>(null);
+	const recordedBlobUrlRef = useRef<string | null>(null);
 
-	const [title, setTitle] = useState(episode?.title ?? "")
-	const [slug, setSlug] = useState(episode?.slug ?? "")
-	const [description, setDescription] = useState(episode?.description ?? "")
-	const [content, setContent] = useState(episode?.content ?? "")
+	const [title, setTitle] = useState(episode?.title ?? "");
+	const [slug, setSlug] = useState(episode?.slug ?? "");
+	const [description, setDescription] = useState(episode?.description ?? "");
+	const [content, setContent] = useState(episode?.content ?? "");
 	const [episodeNumber, setEpisodeNumber] = useState(
 		episode?.episodeNumber != null ? String(episode.episodeNumber) : "",
-	)
+	);
 	const [seasonNumber, setSeasonNumber] = useState(
 		episode?.seasonNumber != null ? String(episode.seasonNumber) : "",
-	)
+	);
 	const [episodeType, setEpisodeType] = useState(
 		episode?.episodeType ?? "full",
-	)
-	const [explicit, setExplicit] = useState(episode?.explicit ?? false)
-	const [status, setStatus] = useState(episode?.status ?? "draft")
+	);
+	const [explicit, setExplicit] = useState(episode?.explicit ?? false);
+	const [status, setStatus] = useState(episode?.status ?? "draft");
 	const [publishedAt, setPublishedAt] = useState(
 		episode?.publishedAt
 			? new Date(episode.publishedAt).toISOString().slice(0, 16)
 			: "",
-	)
+	);
 
-	const [audioFile, setAudioFile] = useState<File | null>(null)
+	const [audioFile, setAudioFile] = useState<File | null>(null);
+	const [audioSource, setAudioSource] = useState<"upload" | "record">("upload");
+	const [isRecorderSupported, setIsRecorderSupported] = useState(false);
+	const [isPreparingRecorder, setIsPreparingRecorder] = useState(false);
+	const [isRecording, setIsRecording] = useState(false);
+	const [recordingElapsed, setRecordingElapsed] = useState(0);
+	const [recordedBlobUrl, setRecordedBlobUrl] = useState<string | null>(null);
 	const [uploadProgress, setUploadProgress] = useState<
 		"idle" | "uploading" | "done" | "error"
-	>("idle")
-	const [error, setError] = useState("")
-	const [slugManuallyEdited, setSlugManuallyEdited] = useState(!!episode)
+	>("idle");
+	const [error, setError] = useState("");
+	const [slugManuallyEdited, setSlugManuallyEdited] = useState(!!episode);
 
 	// Auto-generate slug from title
 	useEffect(() => {
 		if (!slugManuallyEdited && title) {
-			setSlug(toSlug(title))
+			setSlug(toSlug(title));
 		}
-	}, [title, slugManuallyEdited])
+	}, [title, slugManuallyEdited]);
 
-	const getUploadUrl = useMutation(trpc.episodes.getUploadUrl.mutationOptions())
+	useEffect(() => {
+		setIsRecorderSupported(
+			typeof window !== "undefined" &&
+				typeof window.MediaRecorder !== "undefined" &&
+				typeof navigator !== "undefined" &&
+				!!navigator.mediaDevices?.getUserMedia,
+		);
+	}, []);
+
+	useEffect(() => {
+		recordedBlobUrlRef.current = recordedBlobUrl;
+	}, [recordedBlobUrl]);
+
+	useEffect(() => {
+		return () => {
+			if (recordingTimerRef.current != null) {
+				window.clearInterval(recordingTimerRef.current);
+			}
+			mediaStreamRef.current?.getTracks().forEach((track) => track.stop());
+			if (recordedBlobUrlRef.current) {
+				URL.revokeObjectURL(recordedBlobUrlRef.current);
+			}
+		};
+	}, []);
+
+	const getUploadUrl = useMutation(
+		trpc.episodes.getUploadUrl.mutationOptions(),
+	);
 
 	const createEpisode = useMutation(
 		trpc.episodes.create.mutationOptions({
 			onSuccess: () => {
-				queryClient.invalidateQueries(
-					trpc.episodes.adminList.queryOptions(),
-				)
-				onSuccess?.()
+				queryClient.invalidateQueries(trpc.episodes.adminList.queryOptions());
+				onSuccess?.();
 			},
 		}),
-	)
+	);
 
 	const updateEpisode = useMutation(
 		trpc.episodes.update.mutationOptions({
 			onSuccess: () => {
-				queryClient.invalidateQueries(
-					trpc.episodes.adminList.queryOptions(),
-				)
-				onSuccess?.()
+				queryClient.invalidateQueries(trpc.episodes.adminList.queryOptions());
+				onSuccess?.();
 			},
 		}),
-	)
+	);
+
+	function stopRecordingTimer() {
+		if (recordingTimerRef.current != null) {
+			window.clearInterval(recordingTimerRef.current);
+			recordingTimerRef.current = null;
+		}
+	}
+
+	function stopRecordingStream() {
+		mediaStreamRef.current?.getTracks().forEach((track) => track.stop());
+		mediaStreamRef.current = null;
+	}
+
+	function clearRecordedPreview() {
+		if (recordedBlobUrlRef.current) {
+			URL.revokeObjectURL(recordedBlobUrlRef.current);
+			recordedBlobUrlRef.current = null;
+		}
+		setRecordedBlobUrl(null);
+	}
+
+	function handleAudioSourceChange(nextSource: "upload" | "record") {
+		setAudioSource(nextSource);
+		setError("");
+
+		if (nextSource === "upload" && isRecording) {
+			stopRecording();
+		}
+	}
+
+	async function startRecording() {
+		if (!isRecorderSupported || isRecording || isPreparingRecorder) return;
+
+		setError("");
+		setIsPreparingRecorder(true);
+
+		try {
+			const stream = await navigator.mediaDevices.getUserMedia({
+				audio: true,
+			});
+			const mimeType = getPreferredRecordingMimeType();
+			const recorder = mimeType
+				? new MediaRecorder(stream, { mimeType })
+				: new MediaRecorder(stream);
+			const chunks: BlobPart[] = [];
+
+			clearRecordedPreview();
+			setAudioFile(null);
+			setUploadProgress("idle");
+			setRecordingElapsed(0);
+			setAudioSource("record");
+
+			mediaRecorderRef.current = recorder;
+			mediaStreamRef.current = stream;
+
+			recorder.ondataavailable = (event) => {
+				if (event.data.size > 0) {
+					chunks.push(event.data);
+				}
+			};
+
+			recorder.onerror = () => {
+				setError("Recording failed. Please try again.");
+				setIsRecording(false);
+				setIsPreparingRecorder(false);
+				stopRecordingTimer();
+				stopRecordingStream();
+			};
+
+			recorder.onstop = () => {
+				setIsRecording(false);
+				setIsPreparingRecorder(false);
+				stopRecordingTimer();
+				stopRecordingStream();
+
+				const blob = new Blob(chunks, {
+					type: recorder.mimeType || mimeType || "audio/webm",
+				});
+
+				if (blob.size <= 0) {
+					setError("Recording was empty. Please try again.");
+					return;
+				}
+
+				const ext = extensionFromMimeType(blob.type);
+				const safeSlug = slug || toSlug(title) || "episode";
+				const fileName = `${safeSlug}-${Date.now()}.${ext}`;
+				const recordedFile = new File([blob], fileName, {
+					type: blob.type || "audio/webm",
+				});
+
+				const previewUrl = URL.createObjectURL(blob);
+				setRecordedBlobUrl(previewUrl);
+				recordedBlobUrlRef.current = previewUrl;
+				setAudioFile(recordedFile);
+			};
+
+			recorder.start(500);
+			setIsPreparingRecorder(false);
+			setIsRecording(true);
+			recordingTimerRef.current = window.setInterval(() => {
+				setRecordingElapsed((prev) => prev + 1);
+			}, 1000);
+		} catch {
+			setError("Microphone access denied or unavailable.");
+			setIsPreparingRecorder(false);
+			setIsRecording(false);
+			stopRecordingTimer();
+			stopRecordingStream();
+		}
+	}
+
+	function stopRecording() {
+		const recorder = mediaRecorderRef.current;
+		if (!recorder || recorder.state === "inactive") {
+			setIsRecording(false);
+			setIsPreparingRecorder(false);
+			stopRecordingTimer();
+			stopRecordingStream();
+			return;
+		}
+		recorder.stop();
+	}
+
+	function discardRecording() {
+		clearRecordedPreview();
+		setAudioFile(null);
+		setRecordingElapsed(0);
+	}
 
 	async function handleSubmit(e: React.FormEvent) {
-		e.preventDefault()
-		setError("")
+		e.preventDefault();
+		setError("");
 
-		let audioKey = episode?.audioKey ?? ""
-		let audioDuration = episode?.audioDuration ?? 0
-		let audioSize = episode?.audioSize ?? 0
-		let audioMimeType = episode?.audioMimeType ?? "audio/mpeg"
+		if (isRecording || isPreparingRecorder) {
+			setError("Stop recording before saving.");
+			return;
+		}
+
+		let audioKey = episode?.audioKey ?? "";
+		let audioDuration = episode?.audioDuration ?? 0;
+		let audioSize = episode?.audioSize ?? 0;
+		let audioMimeType = episode?.audioMimeType ?? "audio/mpeg";
 
 		if (audioFile) {
 			try {
-				setUploadProgress("uploading")
+				setUploadProgress("uploading");
 
-				const ext = audioFile.name.split(".").pop() ?? "mp3"
-				const key = `episodes/${slug || toSlug(title)}-${Date.now()}.${ext}`
+				const ext = audioFile.name.split(".").pop() ?? "mp3";
+				const key = `episodes/${slug || toSlug(title)}-${Date.now()}.${ext}`;
 
-				const { uploadUrl, key: uploadedKey } =
-					await getUploadUrl.mutateAsync({
-						key,
-						contentType: audioFile.type || "audio/mpeg",
-					})
+				const { uploadUrl, key: uploadedKey } = await getUploadUrl.mutateAsync({
+					key,
+					contentType: audioFile.type || "audio/mpeg",
+				});
 
 				// Detect duration client-side
-				audioDuration = await getAudioDuration(audioFile)
-				audioSize = audioFile.size
-				audioMimeType = audioFile.type || "audio/mpeg"
+				audioDuration = await getAudioDuration(audioFile);
+				audioSize = audioFile.size;
+				audioMimeType = audioFile.type || "audio/mpeg";
 
 				// Upload file
 				const uploadRes = await fetch(uploadUrl, {
 					method: "PUT",
 					body: audioFile,
 					headers: { "Content-Type": audioMimeType },
-				})
+				});
 
 				if (!uploadRes.ok) {
-					throw new Error(`Upload failed: ${uploadRes.statusText}`)
+					throw new Error(`Upload failed: ${uploadRes.statusText}`);
 				}
 
-				audioKey = uploadedKey
-				setUploadProgress("done")
+				audioKey = uploadedKey;
+				setUploadProgress("done");
 			} catch (err) {
-				setUploadProgress("error")
-				setError(
-					err instanceof Error ? err.message : "Upload failed",
-				)
-				return
+				setUploadProgress("error");
+				setError(err instanceof Error ? err.message : "Upload failed");
+				return;
 			}
 		}
 
 		if (!audioKey && !episode) {
-			setError("Audio file is required for new episodes")
-			return
+			setError("Audio file is required for new episodes");
+			return;
 		}
 
 		const episodeData = {
@@ -195,28 +387,30 @@ export function EpisodeForm({ episode, onSuccess }: EpisodeFormProps) {
 			explicit,
 			status: status as "draft" | "published",
 			publishedAt: publishedAt ? new Date(publishedAt) : null,
-		}
+		};
 
 		try {
 			if (episode) {
-				await updateEpisode.mutateAsync({ id: episode.id, ...episodeData })
+				await updateEpisode.mutateAsync({ id: episode.id, ...episodeData });
 			} else {
-				await createEpisode.mutateAsync(episodeData)
+				await createEpisode.mutateAsync(episodeData);
 			}
 		} catch (err) {
-			setError(err instanceof Error ? err.message : "Save failed")
+			setError(err instanceof Error ? err.message : "Save failed");
 		}
 	}
 
 	const isSubmitting =
 		createEpisode.isPending ||
 		updateEpisode.isPending ||
-		uploadProgress === "uploading"
+		uploadProgress === "uploading" ||
+		isRecording ||
+		isPreparingRecorder;
 
 	const inputClass =
-		"w-full bg-transparent border-2 border-white/20 text-white px-3 py-2 font-mono text-sm focus:border-[#22c55e] focus:outline-none transition-colors"
+		"w-full bg-transparent border-2 border-white/20 text-white px-3 py-2 font-mono text-sm focus:border-[#22c55e] focus:outline-none transition-colors";
 	const labelClass =
-		"block font-mono text-xs text-white/40 uppercase tracking-widest mb-1"
+		"block font-mono text-xs text-white/40 uppercase tracking-widest mb-1";
 
 	return (
 		<form onSubmit={handleSubmit} className="max-w-2xl flex flex-col gap-6">
@@ -246,8 +440,8 @@ export function EpisodeForm({ episode, onSuccess }: EpisodeFormProps) {
 					type="text"
 					value={slug}
 					onChange={(e) => {
-						setSlug(e.target.value)
-						setSlugManuallyEdited(true)
+						setSlug(e.target.value);
+						setSlugManuallyEdited(true);
 					}}
 					required
 					className={inputClass}
@@ -289,19 +483,114 @@ export function EpisodeForm({ episode, onSuccess }: EpisodeFormProps) {
 				/>
 			</div>
 
-			{/* Audio file */}
+			{/* Audio source */}
 			<div>
-				<label htmlFor="audio" className={labelClass}>
-					AUDIO FILE {episode ? "(leave blank to keep current)" : "*"}
+				<label className={labelClass}>
+					AUDIO {episode ? "(leave blank to keep current)" : "*"}
 				</label>
-				<input
-					ref={fileInputRef}
-					id="audio"
-					type="file"
-					accept="audio/*"
-					onChange={(e) => setAudioFile(e.target.files?.[0] ?? null)}
-					className="w-full font-mono text-sm text-white/60 file:mr-4 file:border-2 file:border-[#22c55e] file:text-[#22c55e] file:bg-transparent file:px-3 file:py-1 file:font-mono file:text-xs file:uppercase file:tracking-widest hover:file:bg-[#22c55e] hover:file:text-black file:transition-colors cursor-pointer"
-				/>
+
+				<div className="flex flex-wrap gap-2 mb-3">
+					<button
+						type="button"
+						onClick={() => handleAudioSourceChange("upload")}
+						className={`font-mono text-xs uppercase tracking-widest px-3 py-1 border transition-colors ${
+							audioSource === "upload"
+								? "border-[#22c55e] text-[#22c55e]"
+								: "border-white/20 text-white/50 hover:border-white/40 hover:text-white"
+						}`}
+					>
+						Upload file
+					</button>
+					<button
+						type="button"
+						onClick={() => handleAudioSourceChange("record")}
+						disabled={!isRecorderSupported}
+						className={`font-mono text-xs uppercase tracking-widest px-3 py-1 border transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+							audioSource === "record"
+								? "border-[#22c55e] text-[#22c55e]"
+								: "border-white/20 text-white/50 hover:border-white/40 hover:text-white"
+						}`}
+					>
+						Record in browser
+					</button>
+				</div>
+
+				{audioSource === "upload" && (
+					<input
+						ref={fileInputRef}
+						id="audio"
+						type="file"
+						accept="audio/*"
+						onChange={(e) => {
+							setAudioFile(e.target.files?.[0] ?? null);
+							setUploadProgress("idle");
+							clearRecordedPreview();
+						}}
+						className="w-full font-mono text-sm text-white/60 file:mr-4 file:border-2 file:border-[#22c55e] file:text-[#22c55e] file:bg-transparent file:px-3 file:py-1 file:font-mono file:text-xs file:uppercase file:tracking-widest hover:file:bg-[#22c55e] hover:file:text-black file:transition-colors cursor-pointer"
+					/>
+				)}
+
+				{audioSource === "record" && (
+					<div className="border border-white/20 p-3 space-y-3">
+						<div className="flex flex-wrap items-center gap-2">
+							<button
+								type="button"
+								onClick={startRecording}
+								disabled={
+									isRecording || isPreparingRecorder || !isRecorderSupported
+								}
+								className="font-mono text-xs uppercase tracking-widest border border-[#22c55e] text-[#22c55e] px-3 py-2 hover:bg-[#22c55e] hover:text-black transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+							>
+								{isPreparingRecorder
+									? "Preparing..."
+									: isRecording
+										? "Recording..."
+										: "Start recording"}
+							</button>
+							<button
+								type="button"
+								onClick={stopRecording}
+								disabled={!isRecording}
+								className="font-mono text-xs uppercase tracking-widest border border-white/30 text-white/70 px-3 py-2 hover:border-white hover:text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+							>
+								Stop
+							</button>
+							<span className="font-mono text-xs text-white/50">
+								{isRecording ? "REC" : "READY"}{" "}
+								{formatRecordingTime(recordingElapsed)}
+							</span>
+						</div>
+
+						{recordedBlobUrl && (
+							<div className="space-y-2">
+								<audio
+									controls
+									src={recordedBlobUrl}
+									className="w-full h-10 opacity-90"
+								/>
+								<button
+									type="button"
+									onClick={discardRecording}
+									className="font-mono text-[11px] uppercase tracking-widest text-white/50 hover:text-white"
+								>
+									Discard recording
+								</button>
+							</div>
+						)}
+
+						{!isRecorderSupported && (
+							<div className="font-mono text-xs text-white/40">
+								Recording is not supported in this browser.
+							</div>
+						)}
+					</div>
+				)}
+
+				{audioFile && (
+					<div className="font-mono text-xs text-white/40 mt-2">
+						Selected: {audioFile.name}
+					</div>
+				)}
 				{episode?.audioKey && !audioFile && (
 					<div className="font-mono text-xs text-white/30 mt-1">
 						Current: {episode.audioKey}
@@ -429,9 +718,13 @@ export function EpisodeForm({ episode, onSuccess }: EpisodeFormProps) {
 					disabled={isSubmitting}
 					className="border-2 border-[#22c55e] text-[#22c55e] font-black uppercase tracking-widest px-8 py-3 hover:bg-[#22c55e] hover:text-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
 				>
-					{isSubmitting ? "SAVING..." : episode ? "UPDATE EPISODE" : "CREATE EPISODE"}
+					{isSubmitting
+						? "SAVING..."
+						: episode
+							? "UPDATE EPISODE"
+							: "CREATE EPISODE"}
 				</button>
 			</div>
 		</form>
-	)
+	);
 }

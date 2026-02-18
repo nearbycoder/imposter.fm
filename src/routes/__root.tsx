@@ -4,30 +4,30 @@ import {
 	Scripts,
 	createRootRouteWithContext,
 	useRouterState,
-} from "@tanstack/react-router"
-import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools"
-import { TanStackDevtools } from "@tanstack/react-devtools"
+} from "@tanstack/react-router";
+import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
+import { TanStackDevtools } from "@tanstack/react-devtools";
 
-import Header from "../components/Header"
-import { MiniPlayer } from "../components/MiniPlayer"
+import Header from "../components/Header";
+import { MiniPlayer } from "../components/MiniPlayer";
 
-import TanStackQueryProvider from "../integrations/tanstack-query/root-provider"
+import TanStackQueryProvider from "../integrations/tanstack-query/root-provider";
 
-import TanStackQueryDevtools from "../integrations/tanstack-query/devtools"
+import TanStackQueryDevtools from "../integrations/tanstack-query/devtools";
 
-import PostHogProvider from "../integrations/posthog/provider"
-import { PersistentPlayerProvider } from "../integrations/player/persistent-player"
+import PostHogProvider from "../integrations/posthog/provider";
+import { PersistentPlayerProvider } from "../integrations/player/persistent-player";
 
-import appCss from "../styles.css?url"
+import appCss from "../styles.css?url";
 
-import type { QueryClient } from "@tanstack/react-query"
+import type { QueryClient } from "@tanstack/react-query";
 
-import type { TRPCRouter } from "#/integrations/trpc/router"
-import type { TRPCOptionsProxy } from "@trpc/tanstack-react-query"
+import type { TRPCRouter } from "#/integrations/trpc/router";
+import type { TRPCOptionsProxy } from "@trpc/tanstack-react-query";
 
 interface MyRouterContext {
-	queryClient: QueryClient
-	trpc: TRPCOptionsProxy<TRPCRouter>
+	queryClient: QueryClient;
+	trpc: TRPCOptionsProxy<TRPCRouter>;
 }
 
 export const Route = createRootRouteWithContext<MyRouterContext>()({
@@ -44,6 +44,26 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 		],
 		links: [
 			{ rel: "stylesheet", href: appCss },
+			{ rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
+			{
+				rel: "icon",
+				type: "image/png",
+				sizes: "32x32",
+				href: "/favicon-32x32.png",
+			},
+			{
+				rel: "icon",
+				type: "image/png",
+				sizes: "16x16",
+				href: "/favicon-16x16.png",
+			},
+			{ rel: "icon", type: "image/x-icon", href: "/favicon.ico" },
+			{
+				rel: "apple-touch-icon",
+				sizes: "180x180",
+				href: "/apple-touch-icon.png",
+			},
+			{ rel: "manifest", href: "/manifest.json" },
 			{
 				rel: "alternate",
 				type: "application/rss+xml",
@@ -54,15 +74,15 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 	}),
 	shellComponent: RootDocument,
 	notFoundComponent: RootNotFound,
-})
+});
 
-const EMBED_PATHS = ["/embed/"]
-const NO_HEADER_PATHS = ["/login", "/embed/"]
+const EMBED_PATHS = ["/embed/"];
+const NO_HEADER_PATHS = ["/login", "/embed/"];
 
 function RootDocument({ children }: { children: React.ReactNode }) {
-	const pathname = useRouterState({ select: (s) => s.location.pathname })
-	const hideHeader = NO_HEADER_PATHS.some((p) => pathname.startsWith(p))
-	const isEmbed = EMBED_PATHS.some((p) => pathname.startsWith(p))
+	const pathname = useRouterState({ select: (s) => s.location.pathname });
+	const hideHeader = NO_HEADER_PATHS.some((p) => pathname.startsWith(p));
+	const isEmbed = EMBED_PATHS.some((p) => pathname.startsWith(p));
 
 	return (
 		<html lang="en">
@@ -94,7 +114,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 				<Scripts />
 			</body>
 		</html>
-	)
+	);
 }
 
 function RootNotFound() {
@@ -118,5 +138,5 @@ function RootNotFound() {
 				</Link>
 			</div>
 		</div>
-	)
+	);
 }

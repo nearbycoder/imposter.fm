@@ -1,29 +1,33 @@
-import fs from "node:fs/promises"
-import path from "node:path"
-import { createFileRoute } from "@tanstack/react-router"
+import fs from "node:fs/promises";
+import path from "node:path";
+import { createFileRoute } from "@tanstack/react-router";
+import { resolveLocalStoragePath } from "#/lib/storage";
 
 async function handler({ request }: { request: Request }) {
 	if (process.env.NODE_ENV !== "development") {
-		return new Response("Not available in production", { status: 404 })
+		return new Response("Not available in production", { status: 404 });
 	}
 
-	const url = new URL(request.url)
-	const key = url.searchParams.get("key")
+	const url = new URL(request.url);
+	const key = url.searchParams.get("key");
 
 	if (!key) {
-		return new Response("Missing key", { status: 400 })
+		return new Response("Missing key", { status: 400 });
 	}
 
-	// Prevent path traversal
-	const safePath = path.normalize(key).replace(/^(\.\.[/\\])+/, "")
-	const filePath = path.join("./uploads", safePath)
+	let filePath: string;
+	try {
+		filePath = resolveLocalStoragePath("./uploads", key).filePath;
+	} catch {
+		return new Response("Invalid key", { status: 400 });
+	}
 
-	await fs.mkdir(path.dirname(filePath), { recursive: true })
+	await fs.mkdir(path.dirname(filePath), { recursive: true });
 
-	const buffer = await request.arrayBuffer()
-	await fs.writeFile(filePath, Buffer.from(buffer))
+	const buffer = await request.arrayBuffer();
+	await fs.writeFile(filePath, Buffer.from(buffer));
 
-	return new Response("OK", { status: 200 })
+	return new Response("OK", { status: 200 });
 }
 
 export const Route = createFileRoute("/api/upload")({
@@ -32,4 +36,4 @@ export const Route = createFileRoute("/api/upload")({
 			PUT: handler,
 		},
 	},
-})
+});

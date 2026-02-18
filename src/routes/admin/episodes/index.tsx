@@ -1,36 +1,36 @@
-import { Link, createFileRoute } from "@tanstack/react-router"
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { useTRPC } from "#/integrations/trpc/react"
+import { Link, createFileRoute } from "@tanstack/react-router";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTRPC } from "#/integrations/trpc/react";
 
 export const Route = createFileRoute("/admin/episodes/")({
 	component: AdminEpisodesList,
-})
+});
 
 function AdminEpisodesList() {
-	const trpc = useTRPC()
-	const queryClient = useQueryClient()
+	const trpc = useTRPC();
+	const queryClient = useQueryClient();
 
 	const { data: episodesList, isLoading } = useQuery(
 		trpc.episodes.adminList.queryOptions(),
-	)
+	);
 
 	const deleteMutation = useMutation(
 		trpc.episodes.delete.mutationOptions({
 			onSuccess: () => {
-				queryClient.invalidateQueries(trpc.episodes.adminList.queryOptions())
+				queryClient.invalidateQueries(trpc.episodes.adminList.queryOptions());
 			},
 		}),
-	)
+	);
 
 	function formatDuration(seconds: number) {
-		const m = Math.floor(seconds / 60)
-		const s = seconds % 60
-		return `${m}:${String(s).padStart(2, "0")}`
+		const m = Math.floor(seconds / 60);
+		const s = seconds % 60;
+		return `${m}:${String(s).padStart(2, "0")}`;
 	}
 
 	function handleDelete(id: number, title: string) {
 		if (window.confirm(`Delete "${title}"? This cannot be undone.`)) {
-			deleteMutation.mutate({ id })
+			deleteMutation.mutate({ id });
 		}
 	}
 
@@ -74,7 +74,7 @@ function AdminEpisodesList() {
 			{episodesList && episodesList.length > 0 && (
 				<div className="border-2 border-white">
 					{/* Table header */}
-					<div className="grid grid-cols-[auto_1fr_auto_auto_auto] gap-4 px-4 py-2 border-b-2 border-white bg-white/5">
+					<div className="grid grid-cols-[auto_1fr_auto_auto_auto_auto] gap-4 px-4 py-2 border-b-2 border-white bg-white/5">
 						<div className="font-mono text-xs text-white/40 uppercase tracking-widest">
 							#
 						</div>
@@ -88,6 +88,9 @@ function AdminEpisodesList() {
 							STATUS
 						</div>
 						<div className="font-mono text-xs text-white/40 uppercase tracking-widest">
+							LISTENS
+						</div>
+						<div className="font-mono text-xs text-white/40 uppercase tracking-widest">
 							ACTIONS
 						</div>
 					</div>
@@ -95,7 +98,7 @@ function AdminEpisodesList() {
 					{episodesList.map((ep, index) => (
 						<div
 							key={ep.id}
-							className={`grid grid-cols-[auto_1fr_auto_auto_auto] gap-4 px-4 py-3 items-center ${
+							className={`grid grid-cols-[auto_1fr_auto_auto_auto_auto] gap-4 px-4 py-3 items-center ${
 								index < episodesList.length - 1
 									? "border-b border-white/20"
 									: ""
@@ -115,9 +118,7 @@ function AdminEpisodesList() {
 								</div>
 							</div>
 							<div className="font-mono text-xs text-white/60">
-								{ep.audioDuration > 0
-									? formatDuration(ep.audioDuration)
-									: "—"}
+								{ep.audioDuration > 0 ? formatDuration(ep.audioDuration) : "—"}
 							</div>
 							<div>
 								<span
@@ -128,6 +129,13 @@ function AdminEpisodesList() {
 									}`}
 								>
 									{ep.status}
+								</span>
+							</div>
+							<div className="font-mono text-xs text-white/60 whitespace-nowrap">
+								{ep.listens}
+								<span className="text-white/35">
+									{" "}
+									({ep.uniqueListeners} unique)
 								</span>
 							</div>
 							<div className="flex gap-2">
@@ -152,5 +160,5 @@ function AdminEpisodesList() {
 				</div>
 			)}
 		</div>
-	)
+	);
 }

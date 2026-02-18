@@ -1,11 +1,12 @@
 import {
 	boolean,
+	index,
 	integer,
 	pgTable,
 	serial,
 	text,
 	timestamp,
-} from "drizzle-orm/pg-core"
+} from "drizzle-orm/pg-core";
 
 export const podcast = pgTable("podcast", {
 	id: serial().primaryKey(),
@@ -22,7 +23,7 @@ export const podcast = pgTable("podcast", {
 	websiteUrl: text("website_url").notNull(),
 	copyright: text().notNull().default(""),
 	updatedAt: timestamp("updated_at").defaultNow(),
-})
+});
 
 export const episodes = pgTable("episodes", {
 	id: serial().primaryKey(),
@@ -42,4 +43,24 @@ export const episodes = pgTable("episodes", {
 	publishedAt: timestamp("published_at"),
 	createdAt: timestamp("created_at").defaultNow(),
 	updatedAt: timestamp("updated_at").defaultNow(),
-})
+});
+
+export const episodeListens = pgTable(
+	"episode_listens",
+	{
+		id: serial().primaryKey(),
+		episodeId: integer("episode_id")
+			.notNull()
+			.references(() => episodes.id, { onDelete: "cascade" }),
+		listenerId: text("listener_id"),
+		userAgent: text("user_agent"),
+		createdAt: timestamp("created_at").notNull().defaultNow(),
+	},
+	(table) => ({
+		episodeIdIdx: index("episode_listens_episode_id_idx").on(table.episodeId),
+		createdAtIdx: index("episode_listens_created_at_idx").on(table.createdAt),
+		listenerIdIdx: index("episode_listens_listener_id_idx").on(
+			table.listenerId,
+		),
+	}),
+);
