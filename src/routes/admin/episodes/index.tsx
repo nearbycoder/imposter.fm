@@ -1,5 +1,6 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import { useTRPC } from "#/integrations/trpc/react";
 
 export const Route = createFileRoute("/admin/episodes/")({
@@ -9,6 +10,7 @@ export const Route = createFileRoute("/admin/episodes/")({
 function AdminEpisodesList() {
 	const trpc = useTRPC();
 	const queryClient = useQueryClient();
+	const [copiedEpisodeId, setCopiedEpisodeId] = useState<number | null>(null);
 
 	const { data: episodesList, isLoading } = useQuery(
 		trpc.episodes.adminList.queryOptions(),
@@ -32,6 +34,29 @@ function AdminEpisodesList() {
 		if (window.confirm(`Delete "${title}"? This cannot be undone.`)) {
 			deleteMutation.mutate({ id });
 		}
+	}
+
+	async function handleCopyEmbedLink(id: number, slug: string) {
+		const embedUrl = `${window.location.origin}/embed/${slug}`;
+
+		try {
+			await navigator.clipboard.writeText(embedUrl);
+		} catch {
+			const textArea = document.createElement("textarea");
+			textArea.value = embedUrl;
+			textArea.setAttribute("readonly", "");
+			textArea.style.position = "absolute";
+			textArea.style.left = "-9999px";
+			document.body.appendChild(textArea);
+			textArea.select();
+			document.execCommand("copy");
+			document.body.removeChild(textArea);
+		}
+
+		setCopiedEpisodeId(id);
+		window.setTimeout(() => {
+			setCopiedEpisodeId((current) => (current === id ? null : current));
+		}, 2000);
 	}
 
 	return (
@@ -125,19 +150,26 @@ function AdminEpisodesList() {
 									</div>
 								</div>
 
-								<div className="flex gap-2">
+								<div className="grid grid-cols-3 gap-2">
 									<Link
 										to="/admin/episodes/$id/edit"
 										params={{ id: String(ep.id) }}
-										className="flex-1 text-center font-mono text-xs text-white/70 hover:text-white border border-white/30 hover:border-white px-3 py-2 transition-colors"
+										className="text-center font-mono text-xs text-white/70 hover:text-white border border-white/30 hover:border-white px-3 py-2 transition-colors"
 									>
 										EDIT
 									</Link>
 									<button
 										type="button"
+										onClick={() => handleCopyEmbedLink(ep.id, ep.slug)}
+										className="font-mono text-xs text-[#22c55e]/80 hover:text-[#22c55e] border border-[#22c55e]/30 hover:border-[#22c55e] px-3 py-2 transition-colors"
+									>
+										{copiedEpisodeId === ep.id ? "COPIED" : "EMBED"}
+									</button>
+									<button
+										type="button"
 										onClick={() => handleDelete(ep.id, ep.title)}
 										disabled={deleteMutation.isPending}
-										className="flex-1 font-mono text-xs text-red-500/70 hover:text-red-500 border border-red-500/30 hover:border-red-500 px-3 py-2 transition-colors disabled:opacity-30"
+										className="font-mono text-xs text-red-500/70 hover:text-red-500 border border-red-500/30 hover:border-red-500 px-3 py-2 transition-colors disabled:opacity-30"
 									>
 										DELETE
 									</button>
@@ -216,6 +248,13 @@ function AdminEpisodesList() {
 									>
 										EDIT
 									</Link>
+									<button
+										type="button"
+										onClick={() => handleCopyEmbedLink(ep.id, ep.slug)}
+										className="font-mono text-xs text-[#22c55e]/80 hover:text-[#22c55e] border border-[#22c55e]/30 hover:border-[#22c55e] px-2 py-1 transition-colors"
+									>
+										{copiedEpisodeId === ep.id ? "COPIED" : "EMBED"}
+									</button>
 									<button
 										type="button"
 										onClick={() => handleDelete(ep.id, ep.title)}
