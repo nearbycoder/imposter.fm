@@ -116,7 +116,7 @@ export function AudioPlayer({
 			)}
 
 			<div
-				className="flex items-center gap-[2px] h-14 cursor-pointer mb-3 group"
+				className="w-full overflow-hidden flex items-center gap-px sm:gap-[2px] h-14 cursor-pointer mb-3 group"
 				onClick={handleSeek}
 				onKeyDown={(e) => {
 					if (e.key === "Enter" || e.key === " ") {
@@ -138,10 +138,9 @@ export function AudioPlayer({
 					return (
 						<div
 							key={`bar-${i}`}
-							className="flex-shrink-0 transition-all duration-75"
+							className="min-w-0 flex-1 transition-all duration-75"
 							style={{
 								height: `${height * 100}%`,
-								width: compact ? "2px" : "3px",
 								backgroundColor: isPast
 									? "#22c55e"
 									: isHead && isActivePlaying

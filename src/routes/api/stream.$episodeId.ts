@@ -39,6 +39,7 @@ async function handler({
 			"Accept-Ranges": "bytes",
 			"Cache-Control": "public, max-age=86400",
 			"Content-Length": String(size),
+			"X-Content-Type-Options": "nosniff",
 		};
 
 		if (contentRange) {

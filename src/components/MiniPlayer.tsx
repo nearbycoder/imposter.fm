@@ -87,7 +87,7 @@ export function MiniPlayer() {
 							{track.title}
 						</div>
 						<div
-							className="mt-2 h-7 flex items-center gap-[2px] cursor-pointer"
+							className="mt-2 h-7 w-full overflow-hidden flex items-center gap-px sm:gap-[2px] cursor-pointer"
 							onClick={handleSeek}
 							role="slider"
 							aria-label="Seek current episode"
@@ -101,10 +101,9 @@ export function MiniPlayer() {
 								return (
 									<div
 										key={`mini-bar-${i}`}
-										className="flex-shrink-0 transition-all duration-75"
+										className="min-w-0 flex-1 transition-all duration-75"
 										style={{
 											height: `${height * 100}%`,
-											width: "2px",
 											backgroundColor: isPast ? "#22c55e" : "rgba(255,255,255,0.25)",
 										}}
 									/>

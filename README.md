@@ -34,12 +34,22 @@
 
 ## Environment variables
 
-Create `.env.local` in the project root.
+Copy `.env.example` to `.env.local` and fill values.
 
 Required:
 
 - `DATABASE_URL` - PostgreSQL connection string
 - `BETTER_AUTH_SECRET` - Better Auth secret
+
+Recommended in production:
+
+- `BETTER_AUTH_BASE_URL` - canonical auth base URL (for redirects/callbacks)
+- `BETTER_AUTH_TRUSTED_ORIGINS` - comma-separated trusted origins
+
+Runtime/platform provided:
+
+- `PORT` - server port (defaults to `3000` locally)
+- `NODE_ENV` - environment mode (`development` or `production`)
 
 Optional admin bootstrap values:
 
@@ -63,11 +73,13 @@ Optional production object storage values (S3 or R2 compatible):
 - `S3_REGION` (defaults to `auto`)
 - `S3_ACCESS_KEY_ID` or `R2_ACCESS_KEY_ID`
 - `S3_SECRET_ACCESS_KEY` or `R2_SECRET_ACCESS_KEY`
+- `S3_FORCE_PATH_STYLE` (`true` for providers like Railway bucket storage)
 
 Storage behavior:
 
 - Development uses local uploads at `./uploads` via `/api/upload`
 - Production uses S3/R2 signed upload URLs
+- `uploads/` is gitignored and removed from git history
 
 ## Local development
 
@@ -150,3 +162,4 @@ API:
 
 - RSS feed falls back to defaults if no podcast settings row exists.
 - PostHog initialization is skipped when key is missing or placeholder (`phc_xxx`).
+- Upload signing only accepts audio MIME types and validated storage keys.

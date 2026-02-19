@@ -59,7 +59,7 @@ async function handler({ request }: { request: Request }) {
 	const [episode] = await db
 		.select({ id: episodes.id })
 		.from(episodes)
-		.where(eq(episodes.id, episodeId))
+		.where(and(eq(episodes.id, episodeId), eq(episodes.status, "published")))
 		.limit(1);
 
 	if (!episode) {

@@ -122,37 +122,55 @@ class S3StorageAdapter implements StorageAdapter {
 
 	constructor() {
 		this.bucket =
-			process.env.S3_BUCKET_NAME ?? process.env.R2_BUCKET_NAME ?? "";
+			(process.env.S3_BUCKET_NAME ?? process.env.R2_BUCKET_NAME ?? "").trim();
+		const endpoint = (
+			process.env.S3_ENDPOINT ?? process.env.R2_ENDPOINT ?? ""
+		).trim();
+		const accessKeyId = (
+			process.env.S3_ACCESS_KEY_ID ?? process.env.R2_ACCESS_KEY_ID ?? ""
+		).trim();
+		const secretAccessKey = (
+			process.env.S3_SECRET_ACCESS_KEY ?? process.env.R2_SECRET_ACCESS_KEY ?? ""
+		).trim();
+
+		if (!this.bucket || !accessKeyId || !secretAccessKey) {
+			throw new Error(
+				"S3/R2 storage is not configured. Set bucket name and access credentials.",
+			);
+		}
+
+		const forcePathStyle =
+			(process.env.S3_FORCE_PATH_STYLE ?? "").trim().toLowerCase() === "true";
+
 		this.client = new S3Client({
-			endpoint: process.env.S3_ENDPOINT ?? process.env.R2_ENDPOINT,
+			...(endpoint ? { endpoint } : {}),
 			region: process.env.S3_REGION ?? "auto",
+			forcePathStyle,
 			credentials: {
-				accessKeyId:
-					process.env.S3_ACCESS_KEY_ID ?? process.env.R2_ACCESS_KEY_ID ?? "",
-				secretAccessKey:
-					process.env.S3_SECRET_ACCESS_KEY ??
-					process.env.R2_SECRET_ACCESS_KEY ??
-					"",
+				accessKeyId,
+				secretAccessKey,
 			},
 		});
 	}
 
 	async getUploadUrl(key: string, contentType: string) {
+		const normalizedKey = normalizeStorageKey(key);
 		const command = new PutObjectCommand({
 			Bucket: this.bucket,
-			Key: key,
+			Key: normalizedKey,
 			ContentType: contentType,
 		});
 		const uploadUrl = await getSignedUrl(this.client, command, {
 			expiresIn: 3600,
 		});
-		return { uploadUrl, key };
+		return { uploadUrl, key: normalizedKey };
 	}
 
 	async getStream(key: string, range?: string) {
+		const normalizedKey = normalizeStorageKey(key);
 		const command = new GetObjectCommand({
 			Bucket: this.bucket,
-			Key: key,
+			Key: normalizedKey,
 			...(range ? { Range: range } : {}),
 		});
 		const response = await this.client.send(command);

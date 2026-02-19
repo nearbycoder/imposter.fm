@@ -7,6 +7,25 @@ import { createTRPCRouter, protectedProcedure, publicProcedure } from "./init";
 
 import type { TRPCRouterRecord } from "@trpc/server";
 
+const uploadKeySchema = z
+	.string()
+	.trim()
+	.min(1)
+	.max(512)
+	.regex(
+		/^[a-zA-Z0-9/_\-.]+$/,
+		"Upload key may only include letters, numbers, /, -, _, and .",
+	);
+
+const audioContentTypeSchema = z
+	.string()
+	.trim()
+	.max(120)
+	.refine(
+		(value) => /^audio\/[a-z0-9.+-]+(?:\s*;.*)?$/i.test(value),
+		"Only audio content types are allowed",
+	);
+
 const podcastRouter = {
 	get: publicProcedure.query(async () => {
 		const [row] = await db.select().from(podcast).limit(1);
@@ -131,7 +150,12 @@ const episodesRouter = {
 		}),
 
 	getUploadUrl: protectedProcedure
-		.input(z.object({ key: z.string(), contentType: z.string() }))
+		.input(
+			z.object({
+				key: uploadKeySchema,
+				contentType: audioContentTypeSchema,
+			}),
+		)
 		.mutation(async ({ input }) => {
 			return storage.getUploadUrl(input.key, input.contentType);
 		}),
