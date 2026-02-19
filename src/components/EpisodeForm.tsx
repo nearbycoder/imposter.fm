@@ -413,7 +413,7 @@ export function EpisodeForm({ episode, onSuccess }: EpisodeFormProps) {
 		"block font-mono text-xs text-white/40 uppercase tracking-widest mb-1";
 
 	return (
-		<form onSubmit={handleSubmit} className="max-w-2xl flex flex-col gap-6">
+		<form onSubmit={handleSubmit} className="w-full max-w-2xl flex flex-col gap-5 sm:gap-6">
 			{/* Title */}
 			<div>
 				<label htmlFor="title" className={labelClass}>
@@ -609,7 +609,7 @@ export function EpisodeForm({ episode, onSuccess }: EpisodeFormProps) {
 			</div>
 
 			{/* Episode/Season numbers */}
-			<div className="grid grid-cols-2 gap-4">
+			<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 				<div>
 					<label htmlFor="episodeNumber" className={labelClass}>
 						EPISODE #
@@ -658,7 +658,7 @@ export function EpisodeForm({ episode, onSuccess }: EpisodeFormProps) {
 			</div>
 
 			{/* Status + publish date */}
-			<div className="grid grid-cols-2 gap-4">
+			<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 				<div>
 					<label htmlFor="status" className={labelClass}>
 						STATUS
@@ -716,7 +716,7 @@ export function EpisodeForm({ episode, onSuccess }: EpisodeFormProps) {
 				<button
 					type="submit"
 					disabled={isSubmitting}
-					className="border-2 border-[#22c55e] text-[#22c55e] font-black uppercase tracking-widest px-8 py-3 hover:bg-[#22c55e] hover:text-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+					className="w-full sm:w-auto border-2 border-[#22c55e] text-[#22c55e] font-black uppercase tracking-widest px-6 sm:px-8 py-3 hover:bg-[#22c55e] hover:text-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
 				>
 					{isSubmitting
 						? "SAVING..."

@@ -57,17 +57,17 @@ function AdminPasswordPage() {
 	}
 
 	return (
-		<div className="p-8 max-w-2xl">
-			<div className="mb-8">
+		<div className="p-4 sm:p-6 md:p-8 max-w-2xl">
+			<div className="mb-6 sm:mb-8">
 				<div className="font-mono text-[#22c55e] text-xs uppercase tracking-widest mb-1">
 					SECURITY
 				</div>
-				<h1 className="font-black text-white text-4xl uppercase tracking-tight">
+				<h1 className="font-black text-white text-3xl sm:text-4xl uppercase tracking-tight">
 					CHANGE PASSWORD
 				</h1>
 			</div>
 
-			<div className="border-2 border-white p-6">
+			<div className="border-2 border-white p-4 sm:p-6">
 				<p className="font-mono text-xs text-white/50 uppercase tracking-widest mb-6">
 					This updates your admin password and signs out other sessions.
 				</p>
@@ -147,7 +147,7 @@ function AdminPasswordPage() {
 					<button
 						type="submit"
 						disabled={loading}
-						className="mt-2 border-2 border-[#22c55e] text-[#22c55e] font-black uppercase tracking-widest py-3 hover:bg-[#22c55e] hover:text-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+						className="mt-2 w-full sm:w-auto sm:min-w-[220px] border-2 border-[#22c55e] text-[#22c55e] font-black uppercase tracking-widest py-3 px-4 hover:bg-[#22c55e] hover:text-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
 					>
 						{loading ? "UPDATING..." : "UPDATE PASSWORD"}
 					</button>

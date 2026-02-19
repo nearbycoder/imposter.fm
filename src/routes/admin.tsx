@@ -43,10 +43,10 @@ function AdminLayout() {
 	]
 
 	return (
-		<div className="min-h-screen bg-[#0a0a0a] flex">
+		<div className="min-h-screen bg-[#0a0a0a] flex flex-col md:flex-row">
 			{/* Sidebar */}
-			<aside className="w-56 border-r-2 border-white flex flex-col flex-shrink-0">
-				<div className="p-4 border-b-2 border-white">
+			<aside className="w-full md:w-56 border-b-2 md:border-b-0 md:border-r-2 border-white flex flex-col flex-shrink-0">
+				<div className="px-4 py-3 md:p-4 border-b-2 border-white">
 					<Link
 						to="/"
 						className="font-mono text-[#22c55e] text-xs uppercase tracking-widest block mb-1"
@@ -56,7 +56,7 @@ function AdminLayout() {
 					<div className="font-mono text-white/40 text-xs">ADMIN PANEL</div>
 				</div>
 
-				<nav className="flex-1 p-4 flex flex-col gap-1">
+				<nav className="flex-1 p-3 md:p-4 flex md:flex-col gap-2 overflow-x-auto">
 					{navLinks.map((link) => {
 						const isActive = link.exact
 							? pathname === link.to
@@ -65,7 +65,7 @@ function AdminLayout() {
 							<Link
 								key={link.to}
 								to={link.to as never}
-								className={`block font-mono text-xs uppercase tracking-widest px-3 py-2 border transition-colors ${
+								className={`block whitespace-nowrap font-mono text-xs uppercase tracking-widest px-3 py-2 border transition-colors ${
 									isActive
 										? "border-[#22c55e] text-[#22c55e] bg-[#22c55e]/10"
 										: "border-transparent text-white/60 hover:text-white hover:border-white/30"
@@ -77,11 +77,11 @@ function AdminLayout() {
 					})}
 				</nav>
 
-				<div className="p-4 border-t-2 border-white">
+				<div className="px-4 pb-4 md:p-4 border-t-0 md:border-t-2 border-white">
 					<button
 						type="button"
 						onClick={handleSignOut}
-						className="w-full font-mono text-xs uppercase tracking-widest text-white/40 hover:text-white border border-white/20 hover:border-white px-3 py-2 transition-colors"
+						className="w-full md:w-auto font-mono text-xs uppercase tracking-widest text-white/40 hover:text-white border border-white/20 hover:border-white px-3 py-2 transition-colors"
 					>
 						SIGN OUT
 					</button>
@@ -89,7 +89,7 @@ function AdminLayout() {
 			</aside>
 
 			{/* Main content */}
-			<main className="flex-1 overflow-auto">
+			<main className="flex-1 min-w-0 overflow-auto">
 				<Outlet />
 			</main>
 		</div>

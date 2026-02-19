@@ -18,7 +18,7 @@ function EditEpisodePage() {
 
 	if (isLoading) {
 		return (
-			<div className="p-8">
+			<div className="p-4 sm:p-6 md:p-8">
 				<div className="font-mono text-white/40 text-sm">LOADING...</div>
 			</div>
 		)
@@ -26,7 +26,7 @@ function EditEpisodePage() {
 
 	if (!episode) {
 		return (
-			<div className="p-8">
+			<div className="p-4 sm:p-6 md:p-8">
 				<div className="font-mono text-red-500 text-sm">
 					EPISODE NOT FOUND
 				</div>
@@ -35,12 +35,12 @@ function EditEpisodePage() {
 	}
 
 	return (
-		<div className="p-8">
-			<div className="mb-8">
+		<div className="p-4 sm:p-6 md:p-8">
+			<div className="mb-6 sm:mb-8">
 				<div className="font-mono text-[#22c55e] text-xs uppercase tracking-widest mb-1">
 					EDIT
 				</div>
-				<h1 className="font-black text-white text-3xl uppercase tracking-tight">
+				<h1 className="font-black text-white text-2xl sm:text-3xl uppercase tracking-tight break-words">
 					{episode.title}
 				</h1>
 			</div>

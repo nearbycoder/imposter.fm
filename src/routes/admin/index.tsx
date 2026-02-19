@@ -24,48 +24,50 @@ function AdminDashboard() {
 		0;
 
 	return (
-		<div className="p-8">
-			<div className="mb-8">
+		<div className="p-4 sm:p-6 md:p-8">
+			<div className="mb-6 sm:mb-8">
 				<div className="font-mono text-[#22c55e] text-xs uppercase tracking-widest mb-1">
 					DASHBOARD
 				</div>
-				<h1 className="font-black text-white text-4xl uppercase tracking-tight">
+				<h1 className="font-black text-white text-3xl sm:text-4xl uppercase tracking-tight break-words">
 					{podcastConfig?.title ?? "IMPOSTER.FM"}
 				</h1>
 			</div>
 
 			{/* Stats */}
-			<div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+			<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
 				{[
 					{ label: "TOTAL EPISODES", value: totalEpisodes },
 					{ label: "PUBLISHED", value: publishedEpisodes },
 					{ label: "DRAFTS", value: draftEpisodes },
 					{ label: "LISTENS", value: totalListens },
 				].map((stat) => (
-					<div key={stat.label} className="border-2 border-white p-6">
+					<div key={stat.label} className="border-2 border-white p-4 sm:p-6">
 						<div className="font-mono text-xs text-white/40 uppercase tracking-widest mb-2">
 							{stat.label}
 						</div>
-						<div className="font-black text-white text-5xl">{stat.value}</div>
+						<div className="font-black text-white text-4xl sm:text-5xl">
+							{stat.value}
+						</div>
 					</div>
 				))}
 			</div>
 
 			{/* Quick actions */}
-			<div className="border-2 border-white p-6 mb-8">
+			<div className="border-2 border-white p-4 sm:p-6 mb-6 sm:mb-8">
 				<div className="font-mono text-xs text-white/40 uppercase tracking-widest mb-4">
 					QUICK ACTIONS
 				</div>
-				<div className="flex gap-4">
+				<div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
 					<Link
 						to="/admin/episodes/new"
-						className="border-2 border-[#22c55e] text-[#22c55e] font-black uppercase tracking-widest px-6 py-3 hover:bg-[#22c55e] hover:text-black transition-colors"
+						className="w-full sm:w-auto text-center border-2 border-[#22c55e] text-[#22c55e] font-black uppercase tracking-widest px-5 py-3 hover:bg-[#22c55e] hover:text-black transition-colors"
 					>
 						+ NEW EPISODE
 					</Link>
 					<Link
 						to="/admin/episodes"
-						className="border-2 border-white text-white font-black uppercase tracking-widest px-6 py-3 hover:bg-white hover:text-black transition-colors"
+						className="w-full sm:w-auto text-center border-2 border-white text-white font-black uppercase tracking-widest px-5 py-3 hover:bg-white hover:text-black transition-colors"
 					>
 						MANAGE EPISODES
 					</Link>
