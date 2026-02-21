@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
-import { Link, createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useTRPC } from "#/integrations/trpc/react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useMemo, useState } from "react";
 import { AudioPlayer } from "#/components/AudioPlayer";
+import { useTRPC } from "#/integrations/trpc/react";
 
 function titleFromSlug(slug: string): string {
 	return slug
@@ -12,45 +12,96 @@ function titleFromSlug(slug: string): string {
 		.join(" ");
 }
 
-const siteUrl = import.meta.env.VITE_SITE_URL?.replace(/\/$/, "") ?? "";
+const siteUrl =
+	import.meta.env.VITE_SITE_URL?.replace(/\/$/, "") ?? "https://imposter.fm";
 
 function absoluteUrl(path: string): string {
 	return siteUrl ? `${siteUrl}${path}` : path;
 }
 
+function clampDescription(description: string): string {
+	if (description.length <= 160) return description;
+	return `${description.slice(0, 157)}...`;
+}
+
+function toIsoDuration(seconds: number): string {
+	const safeSeconds = Math.max(0, Math.floor(seconds));
+	const h = Math.floor(safeSeconds / 3600);
+	const m = Math.floor((safeSeconds % 3600) / 60);
+	const s = safeSeconds % 60;
+	if (h === 0 && m === 0) return `PT${s}S`;
+	const parts = ["PT"];
+	if (h > 0) parts.push(`${h}H`);
+	if (m > 0) parts.push(`${m}M`);
+	if (s > 0) parts.push(`${s}S`);
+	return parts.join("");
+}
+
 export const Route = createFileRoute("/episodes/$slug")({
-	head: ({ params }) => {
-		const episodeTitle = titleFromSlug(params.slug) || "Episode";
+	loader: async ({ context, params }) => {
+		const episode = await context.queryClient.ensureQueryData(
+			context.trpc.episodes.getBySlug.queryOptions({ slug: params.slug }),
+		);
+		return { episode };
+	},
+	head: ({ params, loaderData }) => {
+		const episode = loaderData?.episode;
+		const episodeTitle =
+			episode?.title ?? (titleFromSlug(params.slug) || "Episode");
+		const episodeDescription = clampDescription(
+			episode?.description ?? `Listen to "${episodeTitle}" on imposter.fm.`,
+		);
 		const slug = encodeURIComponent(params.slug);
 		const canonicalUrl = absoluteUrl(`/episodes/${slug}`);
 		const imageUrl = absoluteUrl(`/api/og/episode/${slug}`);
+		const meta = [
+			{ title: `${episodeTitle} | imposter.fm` },
+			{
+				name: "description",
+				content: episodeDescription,
+			},
+			{
+				name: "robots",
+				content: "index,follow,max-image-preview:large,max-snippet:-1",
+			},
+			{ property: "og:type", content: "article" },
+			{ property: "og:site_name", content: "imposter.fm" },
+			{ property: "og:title", content: `${episodeTitle} | imposter.fm` },
+			{ property: "og:locale", content: "en_US" },
+			{
+				property: "og:description",
+				content: episodeDescription,
+			},
+			{ property: "og:url", content: canonicalUrl },
+			{ property: "og:image", content: imageUrl },
+			{ property: "og:image:width", content: "1200" },
+			{ property: "og:image:height", content: "630" },
+			{
+				property: "og:image:alt",
+				content: `${episodeTitle} podcast episode artwork`,
+			},
+			{ name: "twitter:card", content: "summary_large_image" },
+			{ name: "twitter:title", content: `${episodeTitle} | imposter.fm` },
+			{
+				name: "twitter:description",
+				content: episodeDescription,
+			},
+			{ name: "twitter:image", content: imageUrl },
+			{
+				name: "twitter:image:alt",
+				content: `${episodeTitle} podcast episode artwork`,
+			},
+		];
+
+		if (episode?.publishedAt) {
+			meta.push({
+				property: "article:published_time",
+				content: new Date(episode.publishedAt).toISOString(),
+			});
+		}
 
 		return {
-			meta: [
-				{ title: `${episodeTitle} | imposter.fm` },
-				{
-					name: "description",
-					content: `Listen to "${episodeTitle}" on imposter.fm.`,
-				},
-				{ property: "og:type", content: "article" },
-				{ property: "og:site_name", content: "imposter.fm" },
-				{ property: "og:title", content: `${episodeTitle} | imposter.fm` },
-				{
-					property: "og:description",
-					content: `Listen to "${episodeTitle}" on imposter.fm.`,
-				},
-				{ property: "og:url", content: canonicalUrl },
-				{ property: "og:image", content: imageUrl },
-				{ property: "og:image:width", content: "1200" },
-				{ property: "og:image:height", content: "630" },
-				{ name: "twitter:card", content: "summary_large_image" },
-				{ name: "twitter:title", content: `${episodeTitle} | imposter.fm` },
-				{
-					name: "twitter:description",
-					content: `Listen to "${episodeTitle}" on imposter.fm.`,
-				},
-				{ name: "twitter:image", content: imageUrl },
-			],
+			meta,
 			links: [{ rel: "canonical", href: canonicalUrl }],
 		};
 	},
@@ -58,14 +109,17 @@ export const Route = createFileRoute("/episodes/$slug")({
 });
 
 function EpisodePage() {
+	const { episode: initialEpisode } = Route.useLoaderData();
 	const { slug } = Route.useParams();
 	const trpc = useTRPC();
 	const [origin, setOrigin] = useState("");
 	const [copied, setCopied] = useState(false);
+	const episodeQueryOptions = trpc.episodes.getBySlug.queryOptions({ slug });
 
-	const { data: episode, isLoading } = useQuery(
-		trpc.episodes.getBySlug.queryOptions({ slug }),
-	);
+	const { data: episode = initialEpisode, isLoading } = useQuery({
+		...episodeQueryOptions,
+		initialData: initialEpisode,
+	});
 
 	useEffect(() => {
 		if (typeof window !== "undefined") {
@@ -141,8 +195,33 @@ function EpisodePage() {
 		return `${m}:${String(s).padStart(2, "0")}`;
 	}
 
+	const episodeJsonLd = JSON.stringify(
+		{
+			"@context": "https://schema.org",
+			"@type": "PodcastEpisode",
+			name: episode.title,
+			description: episode.description,
+			url: absoluteUrl(`/episodes/${episode.slug}`),
+			datePublished: episode.publishedAt
+				? new Date(episode.publishedAt).toISOString()
+				: undefined,
+			timeRequired: toIsoDuration(episode.audioDuration),
+			partOfSeries: {
+				"@type": "PodcastSeries",
+				name: "imposter.fm",
+				url: absoluteUrl("/"),
+			},
+			associatedMedia: {
+				"@type": "MediaObject",
+				contentUrl: absoluteUrl(`/api/stream/${episode.id}`),
+			},
+		},
+		(_, value) => (value === undefined ? undefined : value),
+	).replaceAll("<", "\\u003c");
+
 	return (
 		<div className="min-h-screen bg-[#0a0a0a]">
+			<script type="application/ld+json">{episodeJsonLd}</script>
 			{/* Header */}
 			<section className="border-b-2 border-white px-6 py-12">
 				<div className="max-w-4xl mx-auto">

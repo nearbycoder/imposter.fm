@@ -1,29 +1,22 @@
+import { TanStackDevtools } from "@tanstack/react-devtools";
+import type { QueryClient } from "@tanstack/react-query";
 import {
+	createRootRouteWithContext,
 	HeadContent,
 	Link,
 	Scripts,
-	createRootRouteWithContext,
 	useRouterState,
 } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
-import { TanStackDevtools } from "@tanstack/react-devtools";
-
+import type { TRPCOptionsProxy } from "@trpc/tanstack-react-query";
+import type { TRPCRouter } from "#/integrations/trpc/router";
 import Header from "../components/Header";
 import { MiniPlayer } from "../components/MiniPlayer";
-
-import TanStackQueryProvider from "../integrations/tanstack-query/root-provider";
-
-import TanStackQueryDevtools from "../integrations/tanstack-query/devtools";
-
-import PostHogProvider from "../integrations/posthog/provider";
 import { PersistentPlayerProvider } from "../integrations/player/persistent-player";
-
+import PostHogProvider from "../integrations/posthog/provider";
+import TanStackQueryDevtools from "../integrations/tanstack-query/devtools";
+import TanStackQueryProvider from "../integrations/tanstack-query/root-provider";
 import appCss from "../styles.css?url";
-
-import type { QueryClient } from "@tanstack/react-query";
-
-import type { TRPCRouter } from "#/integrations/trpc/router";
-import type { TRPCOptionsProxy } from "@trpc/tanstack-react-query";
 
 interface MyRouterContext {
 	queryClient: QueryClient;
@@ -69,6 +62,11 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 				type: "application/rss+xml",
 				title: "imposter.fm podcast feed",
 				href: "/rss.xml",
+			},
+			{
+				rel: "sitemap",
+				type: "application/xml",
+				href: "/sitemap.xml",
 			},
 		],
 	}),

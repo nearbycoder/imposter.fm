@@ -1,46 +1,55 @@
 import {
+	createFileRoute,
 	Link,
 	Outlet,
-	createFileRoute,
 	redirect,
 	useRouterState,
-} from "@tanstack/react-router"
-import { createServerFn } from "@tanstack/react-start"
-import { getRequest } from "@tanstack/react-start/server"
-import { authClient } from "#/lib/auth-client"
-import { auth } from "#/lib/auth"
+} from "@tanstack/react-router";
+import { createServerFn } from "@tanstack/react-start";
+import { getRequest } from "@tanstack/react-start/server";
+import { auth } from "#/lib/auth";
+import { authClient } from "#/lib/auth-client";
 
 const getAdminSession = createServerFn({ method: "GET" }).handler(async () => {
-	const request = getRequest()
-	const session = await auth.api.getSession({ headers: request.headers })
-	return session ?? null
-})
+	const request = getRequest();
+	const session = await auth.api.getSession({ headers: request.headers });
+	return session ?? null;
+});
 
 export const Route = createFileRoute("/admin")({
+	head: () => ({
+		meta: [
+			{ title: "Admin | imposter.fm" },
+			{
+				name: "robots",
+				content: "noindex,nofollow,noarchive,nosnippet,max-image-preview:none",
+			},
+		],
+	}),
 	beforeLoad: async () => {
-		const session = await getAdminSession()
+		const session = await getAdminSession();
 		if (!session) {
-			throw redirect({ to: "/login" })
+			throw redirect({ to: "/login" });
 		}
-		return { session }
+		return { session };
 	},
 	component: AdminLayout,
-})
+});
 
 function AdminLayout() {
-	const location = useRouterState({ select: (s) => s.location })
-	const pathname = location.pathname
+	const location = useRouterState({ select: (s) => s.location });
+	const pathname = location.pathname;
 
 	async function handleSignOut() {
-		await authClient.signOut()
-		window.location.href = "/login"
+		await authClient.signOut();
+		window.location.href = "/login";
 	}
 
 	const navLinks: Array<{ to: string; label: string; exact?: boolean }> = [
 		{ to: "/admin", label: "DASHBOARD", exact: true },
 		{ to: "/admin/episodes", label: "EPISODES" },
 		{ to: "/admin/password", label: "SECURITY" },
-	]
+	];
 
 	return (
 		<div className="min-h-screen bg-[#0a0a0a] flex flex-col md:flex-row">
@@ -60,7 +69,7 @@ function AdminLayout() {
 					{navLinks.map((link) => {
 						const isActive = link.exact
 							? pathname === link.to
-							: pathname.startsWith(link.to)
+							: pathname.startsWith(link.to);
 						return (
 							<Link
 								key={link.to}
@@ -73,7 +82,7 @@ function AdminLayout() {
 							>
 								{link.label}
 							</Link>
-						)
+						);
 					})}
 				</nav>
 
@@ -93,5 +102,5 @@ function AdminLayout() {
 				<Outlet />
 			</main>
 		</div>
-	)
+	);
 }

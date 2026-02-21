@@ -1,32 +1,41 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router"
-import { useId, useState } from "react"
-import { authClient } from "#/lib/auth-client"
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useId, useState } from "react";
+import { authClient } from "#/lib/auth-client";
 
 export const Route = createFileRoute("/login")({
+	head: () => ({
+		meta: [
+			{ title: "Login | imposter.fm" },
+			{
+				name: "robots",
+				content: "noindex,nofollow,noarchive,nosnippet,max-image-preview:none",
+			},
+		],
+	}),
 	component: LoginPage,
-})
+});
 
 function LoginPage() {
-	const navigate = useNavigate()
-	const emailId = useId()
-	const passwordId = useId()
-	const [email, setEmail] = useState("")
-	const [password, setPassword] = useState("")
-	const [error, setError] = useState("")
-	const [loading, setLoading] = useState(false)
+	const navigate = useNavigate();
+	const emailId = useId();
+	const passwordId = useId();
+	const [email, setEmail] = useState("");
+	const [password, setPassword] = useState("");
+	const [error, setError] = useState("");
+	const [loading, setLoading] = useState(false);
 
 	async function handleSubmit(e: React.FormEvent) {
-		e.preventDefault()
-		setError("")
-		setLoading(true)
+		e.preventDefault();
+		setError("");
+		setLoading(true);
 
-		const result = await authClient.signIn.email({ email, password })
+		const result = await authClient.signIn.email({ email, password });
 
 		if (result.error) {
-			setError(result.error.message ?? "Sign in failed")
-			setLoading(false)
+			setError(result.error.message ?? "Sign in failed");
+			setLoading(false);
 		} else {
-			await navigate({ to: "/admin" })
+			await navigate({ to: "/admin" });
 		}
 	}
 
@@ -95,5 +104,5 @@ function LoginPage() {
 				</div>
 			</div>
 		</div>
-	)
+	);
 }

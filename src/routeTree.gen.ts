@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as RssDotxmlRouteImport } from './routes/rss[.]xml'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as EpisodesRouteImport } from './routes/episodes'
@@ -24,11 +25,17 @@ import { Route as AdminEpisodesRouteImport } from './routes/admin/episodes'
 import { Route as AdminEpisodesIndexRouteImport } from './routes/admin/episodes/index'
 import { Route as ApiTrpcSplatRouteImport } from './routes/api.trpc.$'
 import { Route as ApiStreamEpisodeIdRouteImport } from './routes/api/stream.$episodeId'
+import { Route as ApiOgHomeRouteImport } from './routes/api/og/home'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as AdminEpisodesNewRouteImport } from './routes/admin/episodes/new'
 import { Route as ApiOgEpisodeSlugRouteImport } from './routes/api/og/episode.$slug'
 import { Route as AdminEpisodesIdEditRouteImport } from './routes/admin/episodes/$id.edit'
 
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RssDotxmlRoute = RssDotxmlRouteImport.update({
   id: '/rss.xml',
   path: '/rss.xml',
@@ -104,6 +111,11 @@ const ApiStreamEpisodeIdRoute = ApiStreamEpisodeIdRouteImport.update({
   path: '/api/stream/$episodeId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiOgHomeRoute = ApiOgHomeRouteImport.update({
+  id: '/api/og/home',
+  path: '/api/og/home',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
@@ -131,6 +143,7 @@ export interface FileRoutesByFullPath {
   '/episodes': typeof EpisodesRouteWithChildren
   '/login': typeof LoginRoute
   '/rss.xml': typeof RssDotxmlRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/admin/episodes': typeof AdminEpisodesRouteWithChildren
   '/admin/password': typeof AdminPasswordRoute
   '/api/listen': typeof ApiListenRoute
@@ -140,6 +153,7 @@ export interface FileRoutesByFullPath {
   '/admin/': typeof AdminIndexRoute
   '/admin/episodes/new': typeof AdminEpisodesNewRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/og/home': typeof ApiOgHomeRoute
   '/api/stream/$episodeId': typeof ApiStreamEpisodeIdRoute
   '/api/trpc/$': typeof ApiTrpcSplatRoute
   '/admin/episodes/': typeof AdminEpisodesIndexRoute
@@ -151,6 +165,7 @@ export interface FileRoutesByTo {
   '/episodes': typeof EpisodesRouteWithChildren
   '/login': typeof LoginRoute
   '/rss.xml': typeof RssDotxmlRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/admin/password': typeof AdminPasswordRoute
   '/api/listen': typeof ApiListenRoute
   '/api/upload': typeof ApiUploadRoute
@@ -159,6 +174,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminIndexRoute
   '/admin/episodes/new': typeof AdminEpisodesNewRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/og/home': typeof ApiOgHomeRoute
   '/api/stream/$episodeId': typeof ApiStreamEpisodeIdRoute
   '/api/trpc/$': typeof ApiTrpcSplatRoute
   '/admin/episodes': typeof AdminEpisodesIndexRoute
@@ -172,6 +188,7 @@ export interface FileRoutesById {
   '/episodes': typeof EpisodesRouteWithChildren
   '/login': typeof LoginRoute
   '/rss.xml': typeof RssDotxmlRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/admin/episodes': typeof AdminEpisodesRouteWithChildren
   '/admin/password': typeof AdminPasswordRoute
   '/api/listen': typeof ApiListenRoute
@@ -181,6 +198,7 @@ export interface FileRoutesById {
   '/admin/': typeof AdminIndexRoute
   '/admin/episodes/new': typeof AdminEpisodesNewRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/og/home': typeof ApiOgHomeRoute
   '/api/stream/$episodeId': typeof ApiStreamEpisodeIdRoute
   '/api/trpc/$': typeof ApiTrpcSplatRoute
   '/admin/episodes/': typeof AdminEpisodesIndexRoute
@@ -195,6 +213,7 @@ export interface FileRouteTypes {
     | '/episodes'
     | '/login'
     | '/rss.xml'
+    | '/sitemap.xml'
     | '/admin/episodes'
     | '/admin/password'
     | '/api/listen'
@@ -204,6 +223,7 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/admin/episodes/new'
     | '/api/auth/$'
+    | '/api/og/home'
     | '/api/stream/$episodeId'
     | '/api/trpc/$'
     | '/admin/episodes/'
@@ -215,6 +235,7 @@ export interface FileRouteTypes {
     | '/episodes'
     | '/login'
     | '/rss.xml'
+    | '/sitemap.xml'
     | '/admin/password'
     | '/api/listen'
     | '/api/upload'
@@ -223,6 +244,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/admin/episodes/new'
     | '/api/auth/$'
+    | '/api/og/home'
     | '/api/stream/$episodeId'
     | '/api/trpc/$'
     | '/admin/episodes'
@@ -235,6 +257,7 @@ export interface FileRouteTypes {
     | '/episodes'
     | '/login'
     | '/rss.xml'
+    | '/sitemap.xml'
     | '/admin/episodes'
     | '/admin/password'
     | '/api/listen'
@@ -244,6 +267,7 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/admin/episodes/new'
     | '/api/auth/$'
+    | '/api/og/home'
     | '/api/stream/$episodeId'
     | '/api/trpc/$'
     | '/admin/episodes/'
@@ -257,10 +281,12 @@ export interface RootRouteChildren {
   EpisodesRoute: typeof EpisodesRouteWithChildren
   LoginRoute: typeof LoginRoute
   RssDotxmlRoute: typeof RssDotxmlRoute
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   ApiListenRoute: typeof ApiListenRoute
   ApiUploadRoute: typeof ApiUploadRoute
   EmbedSlugRoute: typeof EmbedSlugRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
+  ApiOgHomeRoute: typeof ApiOgHomeRoute
   ApiStreamEpisodeIdRoute: typeof ApiStreamEpisodeIdRoute
   ApiTrpcSplatRoute: typeof ApiTrpcSplatRoute
   ApiOgEpisodeSlugRoute: typeof ApiOgEpisodeSlugRoute
@@ -268,6 +294,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/rss.xml': {
       id: '/rss.xml'
       path: '/rss.xml'
@@ -373,6 +406,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiStreamEpisodeIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/og/home': {
+      id: '/api/og/home'
+      path: '/api/og/home'
+      fullPath: '/api/og/home'
+      preLoaderRoute: typeof ApiOgHomeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/auth/$': {
       id: '/api/auth/$'
       path: '/api/auth/$'
@@ -452,10 +492,12 @@ const rootRouteChildren: RootRouteChildren = {
   EpisodesRoute: EpisodesRouteWithChildren,
   LoginRoute: LoginRoute,
   RssDotxmlRoute: RssDotxmlRoute,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
   ApiListenRoute: ApiListenRoute,
   ApiUploadRoute: ApiUploadRoute,
   EmbedSlugRoute: EmbedSlugRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
+  ApiOgHomeRoute: ApiOgHomeRoute,
   ApiStreamEpisodeIdRoute: ApiStreamEpisodeIdRoute,
   ApiTrpcSplatRoute: ApiTrpcSplatRoute,
   ApiOgEpisodeSlugRoute: ApiOgEpisodeSlugRoute,

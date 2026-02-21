@@ -3,7 +3,29 @@ import { createFileRoute } from "@tanstack/react-router";
 import { AudioPlayer } from "#/components/AudioPlayer";
 import { useTRPC } from "#/integrations/trpc/react";
 
+const siteUrl =
+	import.meta.env.VITE_SITE_URL?.replace(/\/$/, "") ?? "https://imposter.fm";
+
+function absoluteUrl(path: string): string {
+	return siteUrl ? `${siteUrl}${path}` : path;
+}
+
 export const Route = createFileRoute("/embed/$slug")({
+	head: ({ params }) => ({
+		meta: [
+			{ title: "Episode Embed | imposter.fm" },
+			{
+				name: "robots",
+				content: "noindex,nofollow,noarchive,nosnippet,max-image-preview:none",
+			},
+		],
+		links: [
+			{
+				rel: "canonical",
+				href: absoluteUrl(`/episodes/${encodeURIComponent(params.slug)}`),
+			},
+		],
+	}),
 	component: EmbedPage,
 });
 
