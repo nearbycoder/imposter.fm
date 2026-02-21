@@ -3,6 +3,10 @@ import { useQuery } from "@tanstack/react-query"
 import { useTRPC } from "#/integrations/trpc/react"
 import { EpisodeCard } from "#/components/EpisodeCard"
 import { AudioPlayer } from "#/components/AudioPlayer"
+import { PocketCastsLogo } from "#/components/icons/PocketCastsLogo"
+
+const POCKET_CASTS_URL =
+	"https://pocketcasts.com/podcast/imposterfm/2711c4e0-f017-013e-f85c-022038d1b2e1"
 
 export const Route = createFileRoute("/")({ component: HomePage })
 
@@ -34,6 +38,16 @@ function HomePage() {
 					</p>
 
 					<div className="flex flex-wrap gap-4 mt-8">
+						<a
+							href={POCKET_CASTS_URL}
+							target="_blank"
+							rel="noopener noreferrer"
+							className="inline-flex items-center gap-2 font-mono text-xs border-2 border-white text-white uppercase tracking-widest px-4 py-2 hover:bg-white hover:text-black transition-colors"
+							aria-label="Subscribe on Pocket Casts"
+						>
+							<PocketCastsLogo className="w-4 h-4" />
+							POCKET CASTS
+						</a>
 						<a
 							href="/rss.xml"
 							className="font-mono text-xs border-2 border-white text-white uppercase tracking-widest px-4 py-2 hover:bg-white hover:text-black transition-colors"

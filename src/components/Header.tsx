@@ -2,6 +2,10 @@ import { Link } from "@tanstack/react-router"
 import { useEffect, useState } from "react"
 import { Menu, X } from "lucide-react"
 import { authClient } from "#/lib/auth-client"
+import { PocketCastsLogo } from "#/components/icons/PocketCastsLogo"
+
+const POCKET_CASTS_URL =
+	"https://pocketcasts.com/podcast/imposterfm/2711c4e0-f017-013e-f85c-022038d1b2e1"
 
 export default function Header() {
 	const [isOpen, setIsOpen] = useState(false)
@@ -52,6 +56,16 @@ export default function Header() {
 				</nav>
 
 				<div className="ml-auto flex items-center gap-3">
+					<a
+						href={POCKET_CASTS_URL}
+						target="_blank"
+						rel="noopener noreferrer"
+						className="hidden md:flex items-center gap-1.5 font-mono text-xs uppercase tracking-widest text-white/40 hover:text-white transition-colors"
+						aria-label="Subscribe on Pocket Casts"
+					>
+						<PocketCastsLogo className="w-4 h-4" />
+						<span className="hidden lg:inline">POCKET CASTS</span>
+					</a>
 					<a
 						href="/rss.xml"
 						className="hidden md:block font-mono text-xs uppercase tracking-widest text-white/30 hover:text-[#22c55e] transition-colors"
@@ -119,6 +133,17 @@ export default function Header() {
 						onClick={() => setIsOpen(false)}
 					>
 						RSS FEED ↗
+					</a>
+
+					<a
+						href={POCKET_CASTS_URL}
+						target="_blank"
+						rel="noopener noreferrer"
+						className="flex items-center gap-2 font-mono text-xs uppercase tracking-widest px-3 py-3 text-white/40 hover:text-[#22c55e] border-b border-white/10 transition-colors"
+						onClick={() => setIsOpen(false)}
+					>
+						<PocketCastsLogo className="w-4 h-4" />
+						<span>POCKET CASTS ↗</span>
 					</a>
 
 					{showAdminLink && (
