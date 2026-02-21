@@ -88,6 +88,11 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 		<html lang="en">
 			<head>
 				<HeadContent />
+				<script
+					defer
+					data-domain="imposter.fm"
+					src="https://tic.nrby.xyz/js/script.js"
+				/>
 			</head>
 			<body className={isEmbed ? "" : "bg-[#0a0a0a]"}>
 				<TanStackQueryProvider>
