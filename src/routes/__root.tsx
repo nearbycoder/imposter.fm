@@ -10,6 +10,7 @@ import {
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import type { TRPCOptionsProxy } from "@trpc/tanstack-react-query";
 import type { TRPCRouter } from "#/integrations/trpc/router";
+import GlobalCommandMenu from "../components/GlobalCommandMenu";
 import Header from "../components/Header";
 import { MiniPlayer } from "../components/MiniPlayer";
 import { PersistentPlayerProvider } from "../integrations/player/persistent-player";
@@ -97,6 +98,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 					<PostHogProvider>
 						<PersistentPlayerProvider>
 							{!hideHeader && <Header />}
+							{!isEmbed && <GlobalCommandMenu />}
 							{children}
 							{!isEmbed && <MiniPlayer />}
 							{!isEmbed && (

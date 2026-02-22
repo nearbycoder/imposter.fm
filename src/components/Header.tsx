@@ -1,26 +1,32 @@
-import { Link } from "@tanstack/react-router"
-import { useEffect, useState } from "react"
-import { Menu, X } from "lucide-react"
-import { authClient } from "#/lib/auth-client"
-import { PocketCastsLogo } from "#/components/icons/PocketCastsLogo"
+import { Link } from "@tanstack/react-router";
+import { Menu, Search, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { openCommandMenu } from "#/components/GlobalCommandMenu";
+import { PocketCastsLogo } from "#/components/icons/PocketCastsLogo";
+import { authClient } from "#/lib/auth-client";
 
 const POCKET_CASTS_URL =
-	"https://pocketcasts.com/podcast/imposterfm/2711c4e0-f017-013e-f85c-022038d1b2e1"
+	"https://pocketcasts.com/podcast/imposterfm/2711c4e0-f017-013e-f85c-022038d1b2e1";
 
 export default function Header() {
-	const [isOpen, setIsOpen] = useState(false)
-	const [hasHydrated, setHasHydrated] = useState(false)
-	const { data: session } = authClient.useSession()
-	const showAdminLink = hasHydrated && Boolean(session?.user)
+	const [isOpen, setIsOpen] = useState(false);
+	const [hasHydrated, setHasHydrated] = useState(false);
+	const [isMacPlatform, setIsMacPlatform] = useState(true);
+	const { data: session } = authClient.useSession();
+	const showAdminLink = hasHydrated && Boolean(session?.user);
+	const shortcutHint = isMacPlatform ? "⌘K" : "Ctrl K";
 
 	useEffect(() => {
-		setHasHydrated(true)
-	}, [])
+		setHasHydrated(true);
+		setIsMacPlatform(
+			/mac|iphone|ipad|ipod/i.test(navigator.platform || navigator.userAgent),
+		);
+	}, []);
 
 	const navLinks: Array<{ to: string; label: string; exact?: boolean }> = [
 		{ to: "/", label: "HOME", exact: true },
 		{ to: "/episodes", label: "EPISODES" },
-	]
+	];
 
 	return (
 		<>
@@ -47,7 +53,10 @@ export default function Header() {
 							key={link.to}
 							to={link.to as never}
 							className="font-mono text-xs uppercase tracking-widest px-3 py-2 text-white/60 hover:text-white transition-colors"
-							activeProps={{ className: "font-mono text-xs uppercase tracking-widest px-3 py-2 text-[#22c55e]" }}
+							activeProps={{
+								className:
+									"font-mono text-xs uppercase tracking-widest px-3 py-2 text-[#22c55e]",
+							}}
 							activeOptions={link.exact ? { exact: true } : undefined}
 						>
 							{link.label}
@@ -56,6 +65,20 @@ export default function Header() {
 				</nav>
 
 				<div className="ml-auto flex items-center gap-3">
+					<button
+						type="button"
+						onClick={openCommandMenu}
+						className="hidden md:inline-flex items-center gap-2 border border-white/20 hover:border-[#22c55e] px-2.5 py-1.5 transition-colors"
+						aria-label={`Open command menu (${shortcutHint})`}
+					>
+						<Search size={13} className="text-white/60" />
+						<span className="font-mono text-[11px] uppercase tracking-widest text-white/60">
+							Command
+						</span>
+						<span className="font-mono text-[10px] uppercase tracking-[0.14em] text-white/40">
+							{shortcutHint}
+						</span>
+					</button>
 					<a
 						href={POCKET_CASTS_URL}
 						target="_blank"
@@ -114,13 +137,30 @@ export default function Header() {
 				</div>
 
 				<nav className="flex-1 p-4 flex flex-col gap-1">
+					<button
+						type="button"
+						onClick={() => {
+							openCommandMenu();
+							setIsOpen(false);
+						}}
+						className="w-full flex items-center justify-between font-mono text-xs uppercase tracking-widest px-3 py-3 text-white/60 hover:text-white border-b border-white/10 transition-colors"
+					>
+						<span className="flex items-center gap-2">
+							<Search size={13} />
+							Command Menu
+						</span>
+						<span className="text-white/40">{shortcutHint}</span>
+					</button>
 					{navLinks.map((link) => (
 						<Link
 							key={link.to}
 							to={link.to as never}
 							onClick={() => setIsOpen(false)}
 							className="block font-mono text-xs uppercase tracking-widest px-3 py-3 text-white/60 hover:text-white border-b border-white/10 transition-colors"
-							activeProps={{ className: "block font-mono text-xs uppercase tracking-widest px-3 py-3 text-[#22c55e] border-b border-white/10" }}
+							activeProps={{
+								className:
+									"block font-mono text-xs uppercase tracking-widest px-3 py-3 text-[#22c55e] border-b border-white/10",
+							}}
 							activeOptions={link.exact ? { exact: true } : undefined}
 						>
 							{link.label}
@@ -158,5 +198,5 @@ export default function Header() {
 				</nav>
 			</aside>
 		</>
-	)
+	);
 }
