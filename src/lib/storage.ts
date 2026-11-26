@@ -118,6 +118,7 @@ class LocalStorageAdapter implements StorageAdapter {
 
 class S3StorageAdapter implements StorageAdapter {
 	private client: S3Client;
+	private uploadClient: S3Client;
 	private bucket: string;
 
 	constructor() {
@@ -142,7 +143,7 @@ class S3StorageAdapter implements StorageAdapter {
 		const forcePathStyle =
 			(process.env.S3_FORCE_PATH_STYLE ?? "").trim().toLowerCase() === "true";
 
-		this.client = new S3Client({
+		const config = {
 			...(endpoint ? { endpoint } : {}),
 			region: process.env.S3_REGION ?? "auto",
 			forcePathStyle,
@@ -150,7 +151,12 @@ class S3StorageAdapter implements StorageAdapter {
 				accessKeyId,
 				secretAccessKey,
 			},
-		});
+		};
+		this.client = new S3Client(config);
+		const uploadEndpoint = process.env.S3_UPLOAD_ENDPOINT?.trim();
+		this.uploadClient = uploadEndpoint
+			? new S3Client({ ...config, endpoint: uploadEndpoint })
+			: this.client;
 	}
 
 	async getUploadUrl(key: string, contentType: string) {
@@ -160,7 +166,7 @@ class S3StorageAdapter implements StorageAdapter {
 			Key: normalizedKey,
 			ContentType: contentType,
 		});
-		const uploadUrl = await getSignedUrl(this.client, command, {
+		const uploadUrl = await getSignedUrl(this.uploadClient, command, {
 			expiresIn: 3600,
 		});
 		return { uploadUrl, key: normalizedKey };
